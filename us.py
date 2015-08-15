@@ -97,6 +97,29 @@ def get_plot_data(data):
     return (x_data, y_data)
 
 
+def get_temp_data(util_data, temp_mgr):
+    """Get the temperature data to plot for a set of data for a utility.
+
+    Args:
+        util_data ([Measurement]): the utility to get temperatures for
+        temp_mgr (tempdata.TempDataManager): the temperature data manager to
+                query for temperature data
+
+    Return:
+        ([float], [float]): tuple of arrays of X data and Y data
+    """
+    
+    x_data = []
+    y_data = []
+    for i in range(1, len(util_data)):
+        avg_temp = temp_mgr.get_avg_temp(
+                util_data[i - 1].get_date(),
+                util_data[i].get_date())
+        x_data += [util_data[i].get_date()]
+        y_data += [avg_temp]
+    return (x_data, y_data)
+
+
 def main(gas_file, elec_file):
     """Main program method.
 
@@ -111,17 +134,19 @@ def main(gas_file, elec_file):
     gas_plot_data = get_plot_data(gas_data)
     elec_plot_data = get_plot_data(elec_data)
 
+    temp_mgr = tempdata.TempDataManager()
+    gas_temp_plot_data = get_temp_data(gas_data, temp_mgr)
+    elec_temp_plot_data = get_temp_data(elec_data, temp_mgr)
+
     plt.plot(gas_plot_data[0],
              gas_plot_data[1],
+             gas_temp_plot_data[0],
+             gas_temp_plot_data[1],
              elec_plot_data[0],
-             elec_plot_data[1])
+             elec_plot_data[1],
+             elec_temp_plot_data[0],
+             elec_temp_plot_data[1])
     plt.show()
-
-    dataman = tempdata.TempDataManager()
-    print(dataman.get_temp(datetime.datetime.strptime('2014-08-15', '%Y-%m-%d').date()))
-    print(dataman.get_avg_temp(
-            datetime.datetime.strptime('2014-08-01', '%Y-%m-%d').date(),
-            datetime.datetime.strptime('2014-09-01', '%Y-%m-%d').date()))
 
 
 def parse_args():
