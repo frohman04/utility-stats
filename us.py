@@ -106,7 +106,10 @@ def main(gas_file, elec_file):
     gas_plot_data = get_plot_data(gas_data)
     elec_plot_data = get_plot_data(elec_data)
 
-    plt.plot(gas_plot_data[0], gas_plot_data[1], elec_plot_data[0], elec_plot_data[1])
+    plt.plot(gas_plot_data[0],
+             gas_plot_data[1],
+             elec_plot_data[0],
+             elec_plot_data[1])
     plt.show()
 
 
@@ -117,11 +120,17 @@ def parse_args():
         ({str: str}): the arguments
     """
 
-    parser = argparse.ArgumentParser(description='Generate neat charts from ' +
-            'utility usage data')
-    parser.add_argument('gas', metavar='GAS_FILE', type=str,
+    parser = argparse.ArgumentParser(
+            description='Generate neat charts from utility usage data')
+    parser.add_argument(
+            'gas',
+            metavar='GAS_FILE',
+            type=str,
             help='the CSV file that contains the gas meter readings')
-    parser.add_argument('electric', metavar='ELEC_FILE', type=str,
+    parser.add_argument(
+            'electric',
+            metavar='ELEC_FILE',
+            type=str,
             help='the CSV file that contains the electric meter readings')
     args = parser.parse_args()
     return {
