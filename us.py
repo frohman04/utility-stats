@@ -4,6 +4,9 @@ import argparse
 import csv
 import datetime
 import matplotlib.pyplot as plt
+import logging
+
+import tempdata
 
 
 class Measurement(object):
@@ -61,6 +64,7 @@ def read_file(file_name, units):
         ([Measurement]): the data from the file
     """
 
+    LOGGER.info('Reading file: %s' % file_name)
     measurements = []
     with open(file_name, 'r') as f:
         reader = csv.reader(f)
@@ -69,6 +73,7 @@ def read_file(file_name, units):
                     datetime.datetime.strptime(row[0], '%Y-%m-%d').date(),
                     int(row[1]),
                     units)]
+            LOGGER.debug('\tRead: %s' % measurements[-1])
     return measurements
 
 
@@ -112,6 +117,12 @@ def main(gas_file, elec_file):
              elec_plot_data[1])
     plt.show()
 
+    dataman = tempdata.TempDataManager()
+    print(dataman.get_temp(datetime.datetime.strptime('2014-08-15', '%Y-%m-%d').date()))
+    print(dataman.get_avg_temp(
+            datetime.datetime.strptime('2014-08-01', '%Y-%m-%d').date(),
+            datetime.datetime.strptime('2014-09-01', '%Y-%m-%d').date()))
+
 
 def parse_args():
     """Parse the command line arguments.
@@ -137,6 +148,9 @@ def parse_args():
         'gas': args.gas,
         'elec': args.electric
     }
+
+logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(name=__name__)
 
 if __name__ == '__main__':
     args = parse_args()
