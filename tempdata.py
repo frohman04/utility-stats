@@ -1,5 +1,6 @@
 import csv
 import datetime
+import dateutil
 import logging
 import os.path
 import urllib.request
@@ -98,13 +99,41 @@ class TempDataManager(object):
             date (datetime.date): the date who's data should be loded
         """
 
+        # download the data if we don't have any data for the month
         data_file_name = os.path.join(
                 DATA_DIR,
                 '%s-%s.csv' % (date.year, date.month))
         if not os.path.exists(data_file_name):
             self._download_data(date.year, date.month, data_file_name)
 
-        # TODO: check for if the month doesn't have complete data
+        # load the data from file
+        data = self._load_data_from_disk(data_file_name)
+
+        # if the month doesn't have complete data, redownload it again
+        last_day = max(sorted(data.keys()))
+        first_day = datetime.date(last_day.year, last_day.month, 1)
+        expected_last_day = (
+                first_day +
+                dateutil.relativedelta.relativedelta(months=+1) +
+                datetime.timedelta(days=-1))
+        if (last_day < expected_last_day and
+                last_day != datetime.date.today()):
+            self._download_data(date.year, date.month, data_file_name)
+            data = self._load_data_from_disk(data_file_name)
+
+        # save the downloaded data in memory
+        self._cache[self._get_key(date)] = data
+
+    def _load_data_from_disk(self, data_file_name):
+        """Load the data contained in a downloaded file from disk.
+
+        Args:
+            data_file_name (path str): the file to load
+
+        Return:
+            {datetime.date: int}: the temperature in Farenheit for each day of
+                    the month
+        """
 
         data = {}
         with open(data_file_name, 'r') as f:
@@ -114,7 +143,7 @@ class TempDataManager(object):
                 date = datetime.datetime.strptime(time_str, '%Y-%m-%d').date()
                 temp = int(row['Mean TemperatureF'])
                 data[date] = temp
-        self._cache[self._get_key(date)] = data
+        return data
 
     def _download_data(self, year, month, out_file_name):
         """Download the temperature data for a given month.
