@@ -176,7 +176,7 @@ def main(gas_file, elec_file):
 
     fig.autofmt_xdate()
     fig.tight_layout()
-    
+
     plt.show()
 
 
