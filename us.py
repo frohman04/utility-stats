@@ -108,7 +108,7 @@ def get_temp_data(util_data, temp_mgr):
     Return:
         ([float], [float]): tuple of arrays of X data and Y data
     """
-    
+
     x_data = []
     y_data = []
     for i in range(1, len(util_data)):
@@ -128,7 +128,7 @@ def main(gas_file, elec_file):
         elec_file (path str): the CSV file for electric meter readings
     """
 
-    gas_data = read_file(gas_file, 'therms')
+    gas_data = read_file(gas_file, 'CCF')
     elec_data = read_file(elec_file, 'kWh')
 
     gas_plot_data = get_plot_data(gas_data)

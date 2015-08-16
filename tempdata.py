@@ -104,6 +104,8 @@ class TempDataManager(object):
         if not os.path.exists(data_file_name):
             self._download_data(date.year, date.month, data_file_name)
 
+        # TODO: check for if the month doesn't have complete data
+
         data = {}
         with open(data_file_name, 'r') as f:
             reader = csv.DictReader(f)
