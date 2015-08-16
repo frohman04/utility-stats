@@ -27,6 +27,15 @@ class TempDataManager(object):
     minimize amount of disk access needed.
     """
 
+    class Temp(object):
+        def __init__(self, min, mean, max):
+            self.min = min
+            self.mean = mean
+            self.max = max
+
+        def __repr__(self):
+            return 'Temp(%s, %s, %s)' % (self.min, self.mean, self.max)
+
     def __init__(self):
         """Initialize the manager."""
 
@@ -40,20 +49,64 @@ class TempDataManager(object):
             date (datetime.date): the date to get the temperature for
 
         Return:
-            int: the mean temperature in Farenheit
+            self.Temp: the mean temperature in Farenheit
         """
 
         if not self._get_key(date) in self._cache:
             self._load_data(date)
         return self._cache[self._get_key(date)][date]
 
-    def get_avg_temp(self, from_date, to_date):
+    def get_avg_min_temp(self, from_date, to_date):
+        """Get the average temperature over a range of days, using each day's
+        minimum temperature in Farenheit as the data point to average.
+
+        Args:
+            from_date (datetime.date): the first date in the range (inclusive)
+            to_date (datetime.date): the last date in the range (exclusive)
+
+        Return:
+            float: the average temperature in Farenheit
+        """
+
+        return self._get_avg_temp(from_date, to_date, lambda x: x.min)
+
+    def get_avg_mean_temp(self, from_date, to_date):
         """Get the average temperature over a range of days, using each day's
         mean temperature in Farenheit as the data point to average.
 
         Args:
             from_date (datetime.date): the first date in the range (inclusive)
             to_date (datetime.date): the last date in the range (exclusive)
+
+        Return:
+            float: the average temperature in Farenheit
+        """
+
+        return self._get_avg_temp(from_date, to_date, lambda x: x.mean)
+
+    def get_avg_max_temp(self, from_date, to_date):
+        """Get the average temperature over a range of days, using each day's
+        maximum temperature in Farenheit as the data point to average.
+
+        Args:
+            from_date (datetime.date): the first date in the range (inclusive)
+            to_date (datetime.date): the last date in the range (exclusive)
+
+        Return:
+            float: the average temperature in Farenheit
+        """
+
+        return self._get_avg_temp(from_date, to_date, lambda x: x.max)
+
+    def _get_avg_temp(self, from_date, to_date, selector):
+        """Get the average temperature over a range of days, using each day's
+        mean temperature in Farenheit as the data point to average.
+
+        Args:
+            from_date (datetime.date): the first date in the range (inclusive)
+            to_date (datetime.date): the last date in the range (exclusive)
+            selector (lambda self.Temp -> int): lambda that translates a Temp
+                    object into the desired temperature
 
         Return:
             float: the average temperature in Farenheit
@@ -74,7 +127,7 @@ class TempDataManager(object):
         total = 0
         count = 0
         for date in daterange(from_date, to_date):
-            total += self.get_temp(date)
+            total += selector(self.get_temp(date))
             count += 1
 
         return total / count
@@ -132,8 +185,8 @@ class TempDataManager(object):
             data_file_name (path str): the file to load
 
         Return:
-            {datetime.date: int}: the temperature in Farenheit for each day of
-                    the month
+            {datetime.date: self.Temp}: the temperature in Farenheit for each
+                    day of the month
         """
 
         data = {}
@@ -142,8 +195,10 @@ class TempDataManager(object):
             for row in reader:
                 time_str = row['EST'] if 'EST' in row else row['EDT']
                 date = datetime.datetime.strptime(time_str, '%Y-%m-%d').date()
-                temp = int(row['Mean TemperatureF'])
-                data[date] = temp
+                min_temp = int(row['Min TemperatureF'])
+                mean_temp = int(row['Mean TemperatureF'])
+                max_temp = int(row['Max TemperatureF'])
+                data[date] = self.Temp(min_temp, mean_temp, max_temp)
         return data
 
     def _download_data(self, year, month, out_file_name):

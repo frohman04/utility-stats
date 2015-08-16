@@ -97,22 +97,33 @@ def get_plot_data(data):
     return (x_data, y_data)
 
 
-def get_temp_data(util_data, temp_mgr):
+def get_temp_data(util_data, temp_mgr, measurement):
     """Get the temperature data to plot for a set of data for a utility.
 
     Args:
         util_data ([Measurement]): the utility to get temperatures for
         temp_mgr (tempdata.TempDataManager): the temperature data manager to
                 query for temperature data
+        measurement (str): one of 'min', 'mean', 'max'
 
     Return:
         ([float], [float]): tuple of arrays of X data and Y data
     """
 
+    if measurement == 'min':
+        func = temp_mgr.get_avg_min_temp
+    elif measurement == 'mean':
+        func = temp_mgr.get_avg_mean_temp
+    elif measurement == 'max':
+        func = temp_mgr.get_avg_max_temp
+    else:
+        raise('Unknown measurement type: %s; expected one of min, mean, max' %
+              measurement)
+
     x_data = []
     y_data = []
     for i in range(1, len(util_data)):
-        avg_temp = temp_mgr.get_avg_temp(
+        avg_temp = func(
                 util_data[i - 1].get_date(),
                 util_data[i].get_date())
         x_data += [util_data[i].get_date()]
@@ -135,8 +146,8 @@ def main(gas_file, elec_file):
     elec_plot_data = get_plot_data(elec_data)
 
     temp_mgr = tempdata.TempDataManager()
-    gas_temp_plot_data = get_temp_data(gas_data, temp_mgr)
-    elec_temp_plot_data = get_temp_data(elec_data, temp_mgr)
+    gas_temp_plot_data = get_temp_data(gas_data, temp_mgr, 'min')
+    elec_temp_plot_data = get_temp_data(elec_data, temp_mgr, 'max')
 
     fig, (sub1, sub2) = plt.subplots(2, 1, sharex=True, sharey=True)
 
