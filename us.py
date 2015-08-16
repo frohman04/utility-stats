@@ -138,14 +138,45 @@ def main(gas_file, elec_file):
     gas_temp_plot_data = get_temp_data(gas_data, temp_mgr)
     elec_temp_plot_data = get_temp_data(elec_data, temp_mgr)
 
-    plt.plot(gas_plot_data[0],
+    fig, (sub1, sub2) = plt.subplots(2, 1, sharex=True, sharey=True)
+
+    sub1.set_title('Gas Usage')
+    sub1.set_xlabel('Measurement Date')
+    sub1.set_ylabel('Avg Avg Temp (F)', color='b')
+    for tl in sub1.get_yticklabels():
+        tl.set_color('b')
+    sub1.plot(gas_temp_plot_data[0],
+              gas_temp_plot_data[1],
+              'b')
+
+    ax2 = sub1.twinx()
+    ax2.set_ylabel('CCF used / day', color='r')
+    for tl in ax2.get_yticklabels():
+        tl.set_color('r')
+    ax2.plot(gas_plot_data[0],
              gas_plot_data[1],
-             gas_temp_plot_data[0],
-             gas_temp_plot_data[1],
-             elec_plot_data[0],
+             'r')
+
+    sub2.set_title('Electricity Usage')
+    sub2.set_xlabel('Measurement Date')
+    sub2.set_ylabel('Avg Avg Temp (F)', color='b')
+    for tl in sub2.get_yticklabels():
+        tl.set_color('b')
+    sub2.plot(elec_temp_plot_data[0],
+              elec_temp_plot_data[1],
+              'b')
+
+    ax2 = sub2.twinx()
+    ax2.set_ylabel('kWh used / day', color='r')
+    for tl in ax2.get_yticklabels():
+        tl.set_color('r')
+    ax2.plot(elec_plot_data[0],
              elec_plot_data[1],
-             elec_temp_plot_data[0],
-             elec_temp_plot_data[1])
+             'r')
+
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    
     plt.show()
 
 

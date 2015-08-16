@@ -88,6 +88,7 @@ class TempDataManager(object):
         Return:
             str: the map key
         """
+
         return '%s-%s' % (date.year, date.month)
 
     def _load_data(self, date):
