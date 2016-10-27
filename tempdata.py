@@ -196,8 +196,11 @@ class TempDataManager(object):
                 time_str = row['EST'] if 'EST' in row else row['EDT']
                 date = datetime.datetime.strptime(time_str, '%Y-%m-%d').date()
                 min_temp = int(row['Min TemperatureF'])
-                mean_temp = int(row['Mean TemperatureF'])
                 max_temp = int(row['Max TemperatureF'])
+                if row['Mean TemperatureF'] == '':
+                    mean_temp = (max_temp + min_temp) / float(2)
+                else:
+                    mean_temp = int(row['Mean TemperatureF'])
                 data[date] = self.Temp(min_temp, mean_temp, max_temp)
         return data
 
