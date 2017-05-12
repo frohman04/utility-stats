@@ -3,8 +3,11 @@
 import argparse
 import csv
 import datetime
-import matplotlib.pyplot as plt
 import logging
+import shutil
+
+import plotly.graph_objs as go
+import plotly.offline as pl
 
 import tempdata
 
@@ -149,46 +152,69 @@ def main(gas_file, elec_file):
     gas_temp_plot_data = get_temp_data(gas_data, temp_mgr, 'min')
     elec_temp_plot_data = get_temp_data(elec_data, temp_mgr, 'max')
 
-    fig, (sub1, sub2) = plt.subplots(2, 1, sharex=True, sharey=True)
+    layout = go.Layout(
+        title='Gas Usage',
+        xaxis=dict(
+            title='Meaurement Date'
+        ),
+        yaxis=dict(
+            title='Avg Low Temp (F)'
+        ),
+        yaxis2=dict(
+            title='CCF used / day',
+            overlaying='y',
+            side='right'
+        )
+    )
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=gas_temp_plot_data[0],
+                y=gas_temp_plot_data[1],
+                mode='lines'
+            ),
+            go.Scatter(
+                x=gas_plot_data[0],
+                y=gas_plot_data[1],
+                mode='lines',
+                yaxis='y2'
+            )
+        ],
+        layout=layout)
+    pl.plot(fig)
+    shutil.move('temp-plot.html', 'gas.html')
 
-    sub1.set_title('Gas Usage')
-    sub1.set_xlabel('Measurement Date')
-    sub1.set_ylabel('Avg Avg Temp (F)', color='b')
-    for tl in sub1.get_yticklabels():
-        tl.set_color('b')
-    sub1.plot(gas_temp_plot_data[0],
-              gas_temp_plot_data[1],
-              'b')
-
-    ax2 = sub1.twinx()
-    ax2.set_ylabel('CCF used / day', color='r')
-    for tl in ax2.get_yticklabels():
-        tl.set_color('r')
-    ax2.plot(gas_plot_data[0],
-             gas_plot_data[1],
-             'r')
-
-    sub2.set_title('Electricity Usage')
-    sub2.set_xlabel('Measurement Date')
-    sub2.set_ylabel('Avg Avg Temp (F)', color='b')
-    for tl in sub2.get_yticklabels():
-        tl.set_color('b')
-    sub2.plot(elec_temp_plot_data[0],
-              elec_temp_plot_data[1],
-              'b')
-
-    ax2 = sub2.twinx()
-    ax2.set_ylabel('kWh used / day', color='r')
-    for tl in ax2.get_yticklabels():
-        tl.set_color('r')
-    ax2.plot(elec_plot_data[0],
-             elec_plot_data[1],
-             'r')
-
-    fig.autofmt_xdate()
-    fig.tight_layout()
-
-    plt.show()
+    layout = go.Layout(
+        title='Electricity Usage',
+        xaxis=dict(
+            title='Meaurement Date'
+        ),
+        yaxis=dict(
+            title='Avg High Temp (F)'
+        ),
+        yaxis2=dict(
+            title='kWh used / day',
+            overlaying='y',
+            side='right'
+        )
+    )
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=elec_temp_plot_data[0],
+                y=elec_temp_plot_data[1],
+                mode='lines'
+            ),
+            go.Scatter(
+                x=elec_plot_data[0],
+                y=elec_plot_data[1],
+                mode='lines',
+                yaxis='y2'
+            )
+        ],
+        layout=layout)
+    pl.plot(fig)
+    shutil.move('temp-plot.html', 'electric.html')
 
 
 def parse_args():
