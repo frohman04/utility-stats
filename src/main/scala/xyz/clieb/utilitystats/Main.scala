@@ -1,17 +1,20 @@
 package xyz.clieb.utilitystats
 
+import com.github.tototoshi.csv.CSVReader
+
 import java.io.File
 import java.nio.file.Path
 import java.time.LocalDate
-
-import co.theasi.plotly.writer.PlotFile
-import com.github.tototoshi.csv.CSVReader
-import scopt.OptionParser
-import xyz.clieb.utilitystats.Closable._
-import xyz.clieb.utilitystats.Timed._
+import java.time.temporal.ChronoUnit
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}
+
+import plotly.Scatter
+import plotly.element.ScatterMode
+import scopt.OptionParser
+import xyz.clieb.utilitystats.Closable._
+import xyz.clieb.utilitystats.Timed._
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -71,20 +74,21 @@ object Main {
 
 class Main {
   def run(electricPath: Path, gasPath: Path): Unit = {
-    timed("Drawing electricity usage graph") { graphElectric(electricPath) }
-    timed("Drawing gas usage graph") { graphGas(gasPath) }
+    val tempMgr = new TempDataManager()
+    timed("Drawing electricity usage graph") { graphElectric(electricPath, tempMgr) }
+    timed("Drawing gas usage graph") { graphGas(gasPath, tempMgr) }
   }
 
-  def graphElectric(path: Path): PlotFile = {
-    val csvData = readFile(path, "kWh")
-
-    null
+  def graphElectric(path: Path, tempMgr: TempDataManager): Unit = {
+    val measData = readFile(path, "kWh")
+    val measPlotData = getPlotData(measData)
+    val tempPlotData = getTempData(measData, tempMgr, "min")
   }
 
-  def graphGas(path: Path): PlotFile = {
-    val csvData = readFile(path, "CCF")
-
-    null
+  def graphGas(path: Path, tempMgr: TempDataManager): Unit = {
+    val measData = readFile(path, "CCF")
+    val measPlotData = getPlotData(measData)
+    val tempPlotData = getTempData(measData, tempMgr, "max")
   }
 
   /**
@@ -106,11 +110,70 @@ class Main {
     }
   }
 
+  /**
+    * Get the plottable data series for a given measurement dataset.
+    *
+    * @param data the measurements to get plot data for
+    *
+    * @return (X data points, Y data points)
+    */
+  def getPlotData(data: Seq[Measurement]): (Seq[LocalDate], Seq[Float]) = {
+    (
+        data.drop(1).map(_.date),
+        data
+            .zip(data.tail)
+            .map { case (prev: Measurement, curr: Measurement) =>
+              val numDays = ChronoUnit.DAYS.between(prev.date, curr.date)
+              curr.amount / numDays
+            }
+    )
+  }
+
+  /**
+    * Get the temperature data to plot for a set of data for a utility.
+    *
+    * @param utilData the measurements for a utility's usage
+    * @param tempMgr the temperature datamanager to query for temperature data
+    * @param measurement one of 'min', 'mean', 'max'
+    *
+    * @return (X data points, Y data points)
+    */
+  def getTempData(utilData: Seq[Measurement], tempMgr: TempDataManager, measurement: String):
+  (Seq[LocalDate], Seq[Float]) = {
+    val getAvgTemp = measurement match {
+      case "min" =>
+        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMinTemp(fromDate, toDate)
+      case "mean" =>
+        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMeanTemp(fromDate, toDate)
+      case "max" =>
+        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMaxTemp(fromDate, toDate)
+      case a: Any =>
+        throw new IllegalArgumentException(
+          s"Unknown measurement type: ${a}; expected one of min, mean, max")
+    }
+
+    (
+        utilData.drop(1).map(_.date),
+        utilData
+            .zip(utilData.tail)
+            .map { case (prev: Measurement, curr: Measurement) =>
+              getAvgTemp(prev.date, curr.date)
+            }
+    )
+  }
+
   implicit def orderedLocalDate: Ordering[LocalDate] = new Ordering[LocalDate] {
     def compare(x: LocalDate, y: LocalDate): Int = x compareTo y
   }
 }
 
+/**
+  * A single meter reading.
+  *
+  * @param date the date of the meter reading
+  * @param amount the amount of resources used since the last meter reading
+  * @param units the units that the measurement is in
+  */
 case class Measurement(
     date: LocalDate,
     amount: Float,
