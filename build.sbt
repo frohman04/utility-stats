@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "3.7.0",
   "org.apache.commons" % "commons-math3" % "3.6.1",
   "com.github.tototoshi" %% "scala-csv" % "1.3.5",
+  "org.scalaj" % "scalaj-http_2.12" % "2.3.0",
 
   // need to build by-hand to get version that works w/ Scala 2.12
   //   * set the SBT version to 0.13.16
