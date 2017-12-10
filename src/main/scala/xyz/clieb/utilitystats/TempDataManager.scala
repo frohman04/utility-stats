@@ -181,6 +181,8 @@ class TempDataManager(storageDir: Path = Paths.get("temp_data")) extends LazyLog
               }
             (date, Temp(minTemp, meanTemp, maxTemp))
           }
+          .seq
+          .toList
     } match {
       case Success(v) => v.toMap
       case Failure(e) => throw e
@@ -206,6 +208,10 @@ class TempDataManager(storageDir: Path = Paths.get("temp_data")) extends LazyLog
 
   private def getDataUrl(year: Int, month: Int) =
     s"http://www.wunderground.com/history/airport/KBED/${year}/${month}/1/MonthlyHistory.html?format=1"
+
+  implicit def orderedLocalDate: Ordering[LocalDate] = new Ordering[LocalDate] {
+    def compare(x: LocalDate, y: LocalDate): Int = x compareTo y
+  }
 }
 
 case class Temp(

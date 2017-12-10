@@ -10,8 +10,11 @@ import java.time.temporal.ChronoUnit
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-import plotly.Scatter
-import plotly.element.ScatterMode
+import plotly._
+import plotly.element
+import plotly.element._
+import plotly.layout._
+import plotly.Plotly._
 import scopt.OptionParser
 import xyz.clieb.utilitystats.Closable._
 import xyz.clieb.utilitystats.Timed._
@@ -82,13 +85,61 @@ class Main {
   def graphElectric(path: Path, tempMgr: TempDataManager): Unit = {
     val measData = readFile(path, "kWh")
     val measPlotData = getPlotData(measData)
-    val tempPlotData = getTempData(measData, tempMgr, "min")
+//    val tempPlotData = getTempData(measData, tempMgr, "max")
+
+    val measTrace = Scatter(
+      values = measPlotData._1.map(dt =>
+        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+      secondValues = measPlotData._2,
+      mode = ScatterMode(ScatterMode.Lines),
+      yaxis = AxisReference.Y2
+    )
+//    val tempTrace = Scatter(
+//      values = tempPlotData._1.map(dt =>
+//        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+//      secondValues = tempPlotData._2,
+//      mode = ScatterMode(ScatterMode.Lines)
+//    )
+    Seq(measTrace).plot(
+      path = "electric.html",
+      openInBrowser = true,
+      title = "Electricity Usage",
+      xaxis = Axis(title = "Measurement Date"),
+      yaxis = Axis(title = "Avg High Temp (F)"),
+      yaxis2 = Axis(
+        title = "kWh used / day",
+        side = Side.Right
+      ))
   }
 
   def graphGas(path: Path, tempMgr: TempDataManager): Unit = {
     val measData = readFile(path, "CCF")
     val measPlotData = getPlotData(measData)
-    val tempPlotData = getTempData(measData, tempMgr, "max")
+//    val tempPlotData = getTempData(measData, tempMgr, "min")
+
+    val measTrace = Scatter(
+      values = measPlotData._1.map(dt =>
+        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+      secondValues = measPlotData._2,
+      mode = ScatterMode(ScatterMode.Lines),
+      yaxis = AxisReference.Y2
+    )
+    //    val tempTrace = Scatter(
+    //      values = tempPlotData._1.map(dt =>
+    //        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+    //      secondValues = tempPlotData._2,
+    //      mode = ScatterMode(ScatterMode.Lines)
+    //    )
+    Seq(measTrace).plot(
+      path = "gas.html",
+      openInBrowser = true,
+      title = "Gas Usage",
+      xaxis = Axis(title = "Measurement Date"),
+      yaxis = Axis(title = "Avg Los Temp (F)"),
+      yaxis2 = Axis(
+        title = "CCF used / day",
+        side = Side.Right
+      ))
   }
 
   /**
@@ -103,7 +154,7 @@ class Main {
     closable(CSVReader.open(path.toFile)) { reader =>
       reader.iterator.map { case (values: Seq[String]) =>
         Measurement(LocalDate.parse(values(0)), values(1).toFloat, units)
-      }.toSeq
+      }.seq.toList
     } match {
       case Success(v) => v
       case Failure(e) => throw e
@@ -160,10 +211,6 @@ class Main {
               getAvgTemp(prev.date, curr.date)
             }
     )
-  }
-
-  implicit def orderedLocalDate: Ordering[LocalDate] = new Ordering[LocalDate] {
-    def compare(x: LocalDate, y: LocalDate): Int = x compareTo y
   }
 }
 
