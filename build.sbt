@@ -6,6 +6,7 @@ scalaVersion := "2.12.4"
 
 val slf4jVersion = "1.7.25"
 val plotlyVersion = "0.3.3"
+val json4sVersion = "3.6.0-M2"
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -18,7 +19,9 @@ libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "3.7.0",
   "org.apache.commons" % "commons-math3" % "3.6.1",
   "com.github.tototoshi" %% "scala-csv" % "1.3.5",
-  "org.scalaj" % "scalaj-http_2.12" % "2.3.0",
+  "org.scalaj" %% "scalaj-http" % "2.3.0",
+  "org.json4s" %% "json4s-core" % json4sVersion,
+  "org.json4s" %% "json4s-jackson" % json4sVersion,
   "org.plotly-scala" % "plotly-core_2.12" % plotlyVersion,
   "org.plotly-scala" % "plotly-render_2.12" % plotlyVersion
 )
