@@ -1,7 +1,7 @@
 package xyz.clieb.utilitystats.wunderground
 
 import com.esotericsoftware.kryo.io.{Input, Output}
-import com.twitter.chill.{KryoInstantiator, ScalaKryoInstantiator}
+import com.twitter.chill.ScalaKryoInstantiator
 import com.typesafe.scalalogging.LazyLogging
 
 import org.apache.commons.compress.compressors.gzip.{GzipCompressorInputStream, GzipCompressorOutputStream}
@@ -65,7 +65,7 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
     }
   }
 
-  private def apiCall(url: String): JValue = {
+  private def apiCall(url: String, retries: Int = 2): JValue = {
     totalRequestsMade += 1
     if (totalRequestsMade > Client.requestsPerDay) {
       throw new RuntimeException("Too many requests made for today")
@@ -83,27 +83,40 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
     logger.info(s"Calling Wunderground: ${url}")
     val response = Http(url).asString
 
-    val rawBody = Try(response.throwError.body) match {
-      case Success(body) => body
-      case Failure(e: HttpStatusException) =>
-        val headers = response.headers
-            .toSeq
-            .flatMap { case (key: String, values: Seq[String]) =>
-              values.map { case (value: String) => (key, value) } }
-            .map { case (key: String, value: String) => s"${key}: ${value}" }
-            .mkString("\n")
-        logger.error(s"${e.code} ${e.statusLine}\n${headers}\n\n${response.body}")
+    try {
+      val rawBody = Try(response.throwError.body) match {
+        case Success(body) => body
+        case Failure(e: HttpStatusException) =>
+          val headers = response.headers
+              .toSeq
+              .flatMap { case (key: String, values: Seq[String]) =>
+                values.map { case (value: String) => (key, value) }
+              }
+              .map { case (key: String, value: String) => s"${key}: ${value}" }
+              .mkString("\n")
+          logger.error(s"${e.code} ${e.statusLine}\n${headers}\n\n${response.body}")
 
-        throw e
-      case Failure(e) => throw e
-    }
+          throw e
+        case Failure(e) =>
+          throw e
+      }
 
-    Try(parse(rawBody)) match {
-      case Success(json) => json
-      case Failure(e) =>
-        logger.error(rawBody)
+      Try(parse(rawBody)) match {
+        case Success(json) => json
+        case Failure(e) =>
+          logger.error(rawBody, e)
 
-        throw e
+          throw e
+      }
+    } catch {
+      case e: Throwable =>
+        if (retries > 0) {
+          val remaining = retries - 1
+          logger.warn(s"API call failed, retrying (${remaining} remaining")
+          apiCall(url, remaining)
+        } else {
+          throw e
+        }
     }
   }
 }
