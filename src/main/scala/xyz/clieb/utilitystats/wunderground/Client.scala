@@ -1,8 +1,7 @@
 package xyz.clieb.utilitystats.wunderground
 
-import xyz.clieb.utilitystats.Closable.closable
-import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
+import com.twitter.chill.{KryoInstantiator, ScalaKryoInstantiator}
 import com.typesafe.scalalogging.LazyLogging
 
 import org.apache.commons.compress.compressors.gzip.{GzipCompressorInputStream, GzipCompressorOutputStream}
@@ -11,12 +10,14 @@ import org.json4s.jackson.JsonMethods._
 
 import java.io.{FileInputStream, FileOutputStream}
 import java.nio.file.{Path, Paths}
-import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.time.{LocalDate, LocalDateTime}
 
-import scala.util.{Failure, Success}
-import scalaj.http.Http
+import scala.util.{Failure, Success, Try}
+import scalaj.http.{Http, HttpStatusException}
+
+import xyz.clieb.utilitystats.Closable.closable
 
 class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLogging {
   if (!storageDir.toFile.exists()) {
@@ -31,6 +32,12 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
   private val requestPerMinuteTracker = new RingBuffer[LocalDateTime](Client.requestsPerMinute)
   private var totalRequestsMade = 0
 
+  private val kryo = new ScalaKryoInstantiator().newKryo()
+  kryo.register(classOf[HistoryResponse])
+  kryo.register(classOf[ResponseHeader])
+  kryo.register(classOf[History])
+  kryo.register(classOf[Observation])
+
   def getHistorical(date: LocalDate): HistoryResponse = {
     if (LocalDate.from(date).equals(LocalDate.now())) {
       throw new IllegalArgumentException("Cannot query history for today")
@@ -38,7 +45,6 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
 
     val dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
     val cacheFile = Paths.get(historyStorageDir.toString, s"${dateStr}.kryo.gz")
-    val kryo = new Kryo()
 
     if (cacheFile.toFile.exists()) {
       closable(new Input(new GzipCompressorInputStream(new FileInputStream(cacheFile.toFile)))) { input =>
