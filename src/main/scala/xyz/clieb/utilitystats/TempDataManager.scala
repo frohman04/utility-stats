@@ -121,7 +121,10 @@ class TempDataManager extends LazyLogging {
   private def fetchData(date: LocalDate): Temp = {
     val data = client.getHistorical(date)
 
-    val temps = data.history.observations.map { case (obs: Observation) => obs.tempF }
+    val temps = data.history.observations
+        .map { case (obs: Observation) => obs.tempF }
+        .filter { case (temp: Option[Float]) => temp.isDefined }
+        .map { case (temp: Option[Float]) => temp.get }
     val min = temps.min
     val max = temps.max
     val mean = temps.sum / temps.size
