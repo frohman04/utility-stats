@@ -74,14 +74,37 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
     val now = LocalDateTime.now()
     if (requestPerMinuteTracker.peekTail != null &&
         now.minusMinutes(1).isBefore(requestPerMinuteTracker.peekTail)) {
-      logger.info("Requests per minute exceeded, sleeping")
-      Thread.sleep(requestPerMinuteTracker.peekTail.until(now, ChronoUnit.MILLIS))
+      val sleep = requestPerMinuteTracker.peekTail.until(now, ChronoUnit.MILLIS)
+      logger.info(s"Requests per minute exceeded, sleeping ${sleep}")
+      Thread.sleep(sleep)
     }
+    requestPerMinuteTracker.add(now)
 
     logger.info(s"Calling Wunderground: ${url}")
     val response = Http(url).asString
 
-    parse(response.throwError.body)
+    val rawBody = Try(response.throwError.body) match {
+      case Success(body) => body
+      case Failure(e: HttpStatusException) =>
+        val headers = response.headers
+            .toSeq
+            .flatMap { case (key: String, values: Seq[String]) =>
+              values.map { case (value: String) => (key, value) } }
+            .map { case (key: String, value: String) => s"${key}: ${value}" }
+            .mkString("\n")
+        logger.error(s"${e.code} ${e.statusLine}\n${headers}\n\n${response.body}")
+
+        throw e
+      case Failure(e) => throw e
+    }
+
+    Try(parse(rawBody)) match {
+      case Success(json) => json
+      case Failure(e) =>
+        logger.error(rawBody)
+
+        throw e
+    }
   }
 }
 
