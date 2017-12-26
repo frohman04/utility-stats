@@ -3,6 +3,9 @@ package xyz.clieb.utilitystats.wunderground
 import org.json4s.JValue
 
 private[wunderground] class HistoryResponseParser extends Parser {
+  /**
+    * Parse a response from /history_yyyyMMdd into an object.
+    */
   def parseHistoryResponse(node: JValue): HistoryResponse = {
     val header = parseResponseHeader(node \ "response")
     val history = parseHistory(node \ "history")
@@ -10,17 +13,26 @@ private[wunderground] class HistoryResponseParser extends Parser {
     HistoryResponse(header, history)
   }
 
-  def parseHistory(node: JValue): History = {
+  /**
+    * Parse the "history" object into a History object.
+    */
+  private def parseHistory(node: JValue): History = {
     val date = parseDate(node \ "date")
     val observations = parseObservations(node \ "observations")
 
     History(date, observations)
   }
 
-  def parseObservations(node: JValue): Seq[Observation] =
+  /**
+    * Parse a list of "observation" objects into Observation objects.
+    */
+  private def parseObservations(node: JValue): Seq[Observation] =
     node.children.map(parseObservation)
 
-  def parseObservation(node: JValue): Observation = {
+  /**
+    * Parse an "observation" object into an Observation object.
+    */
+  private def parseObservation(node: JValue): Observation = {
     val date = parseDate(node \ "date")
     val tempF = parseFloat(node \ "tempi")
     val dewPtF = parseFloat(node \ "dewpti")

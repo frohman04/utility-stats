@@ -4,10 +4,20 @@ import org.json4s.{DefaultFormats, JValue}
 
 import java.time.{ZoneId, ZonedDateTime}
 
+/**
+  * A parser object for common fields in Weather Underground response JSON objects.
+  */
 private[wunderground] class Parser {
   implicit val formats = DefaultFormats
 
-  def parseResponseHeader(node: JValue): ResponseHeader = {
+  /**
+    * Parse the "response" header.
+    *
+    * @param node node for the object assigned to the "response" key
+    *
+    * @return parsed response header
+    */
+  protected def parseResponseHeader(node: JValue): ResponseHeader = {
     val version = parseString(node \ "version").get
     val termsOfService = parseString(node \ "termsofService").get
     val features = (node \ "features").extract[Map[String, Int]]
@@ -15,7 +25,14 @@ private[wunderground] class Parser {
     ResponseHeader(version, termsOfService, features)
   }
 
-  def parseDate(node: JValue): ZonedDateTime = {
+  /**
+    * Parse the "date" JSON object into a ZonedDateTime object.
+    *
+    * @param node node for the object assigned to a "date" key
+    *
+    * @return the date/time represented by the date object
+    */
+  protected def parseDate(node: JValue): ZonedDateTime = {
     val year = parseInt(node \ "year").get
     val month = parseInt(node \ "mon").get
     val day = parseInt(node \ "mday").get
@@ -34,18 +51,44 @@ private[wunderground] class Parser {
       ZoneId.of(zone))
   }
 
-  def parseString(node: JValue): Option[String] =
+  /**
+    * Parse a string from a field, replacing "N/A' with None.
+    */
+  protected def parseString(node: JValue): Option[String] =
     safeParse[String](node, str => str, _ => true)
 
-  def parseInt(node: JValue): Option[Int] =
+  /**
+    * Parse an Int from a String field, replacing "N/A" and negative numbers with None.
+    */
+  protected def parseInt(node: JValue): Option[Int] =
     safeParse[Int](node, str => str.toInt, value => value >= 0)
 
-  def parseFloat(node: JValue): Option[Float] =
+  /**
+    * Parse a Float from a String field, replacing "N/A" and negative numbers with None.
+    */
+  protected def parseFloat(node: JValue): Option[Float] =
     safeParse[Float](node, str => str.toFloat, value => value >= 0)
 
-  def parseBool(node: JValue): Option[Boolean] =
+  /**
+    * Parse a Boolean from a String field ("0" == false, "1" == true), replacing "N/A" and negative
+    * numbers with None.
+    */
+  protected def parseBool(node: JValue): Option[Boolean] =
     safeParse[Int](node, str => str.toInt, value => value >= 0).map(_ == 1)
 
+  /**
+    * Safely parse a value field, turning "N/A" and certain values of the field into None.
+    *
+    * @param node the node to parse
+    * @param parseValue function that takes the raw string extracted for the field and transforms it
+    *                   into the correct type for the field
+    * @param isValidValue function that determines if the parsed value for the field should be used
+    *                     or replaced with None
+    *
+    * @tparam T the type of value to parse out of the String
+    *
+    * @return the parsed value or None
+    */
   private def safeParse[T](
       node: JValue,
       parseValue: (String => T),

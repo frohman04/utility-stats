@@ -19,6 +19,11 @@ import scalaj.http.{Http, HttpStatusException}
 
 import xyz.clieb.utilitystats.Closable.closable
 
+/**
+  * A client for the Weather Underground API.
+  *
+  * @param storageDir the directory to store cached responses in
+  */
 class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLogging {
   if (!storageDir.toFile.exists()) {
     storageDir.toFile.mkdirs()
@@ -38,6 +43,16 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
   kryo.register(classOf[History])
   kryo.register(classOf[Observation])
 
+  /**
+    * Get the weather conditions throughout the day for a day in the past.
+    *
+    * If this date's conditions have been retrieved in the past, then pull the cached response from
+    * disk since it is highly unlikely that the conditions have changed after the day ended.
+    *
+    * @param date the date the pull history for
+    *
+    * @return the historical weather conditions
+    */
   def getHistorical(date: LocalDate): HistoryResponse = {
     if (LocalDate.from(date).equals(LocalDate.now())) {
       throw new IllegalArgumentException("Cannot query history for today")
@@ -65,6 +80,19 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
     }
   }
 
+  /**
+    * Make a call to the Weather Underground API.
+    *
+    * Supports limited retries since the API has moments of flakyness.
+    *
+    * Also supports primitive rate limiting at the minute and day resolution.  A day is defined as
+    * the lifetime of this program and is not tracked across invocations.
+    *
+    * @param url the URL on the API to call
+    * @param retries the number of times to retry the request before deeming it a failure
+    *
+    * @return the parsed JSON body of the request
+    */
   private def apiCall(url: String, retries: Int = 2): JValue = {
     totalRequestsMade += 1
     if (totalRequestsMade > Client.requestsPerDay) {
@@ -110,9 +138,10 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
       }
     } catch {
       case e: Throwable =>
+        // retry the request if it fails for any reason and there are retry attempts remaining
         if (retries > 0) {
           val remaining = retries - 1
-          logger.warn(s"API call failed, retrying (${remaining} remaining")
+          logger.warn(s"API call failed, retrying (${remaining} remaining)")
           apiCall(url, remaining)
         } else {
           throw e

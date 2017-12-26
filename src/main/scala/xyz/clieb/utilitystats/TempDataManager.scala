@@ -3,7 +3,6 @@ package xyz.clieb.utilitystats
 import com.typesafe.scalalogging.LazyLogging
 
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 import scala.collection.mutable
 
@@ -103,20 +102,8 @@ class TempDataManager extends LazyLogging {
   }
 
   /**
-    * Get the key into the cache for a given date.
-    *
-    * @param date the date to get the key for
-    *
-    * @return the cache key
-    */
-  private def getKey(date: LocalDate): String =
-    date.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-
-  /**
-    * Load data from disk into cache for a given date.  May also cause data for other dates to be
-    * loaded at the same time.  If the data is not yet on disk, then download it.
-    *
-    * @param date the date who's data should be loaded
+    * Fetch the temperature data for a given date.  This data can come from disk cache or direct
+    * from the WUnderground API.
     */
   private def fetchData(date: LocalDate): Temp = {
     val data = client.getHistorical(date)
