@@ -85,7 +85,7 @@ class Main {
   def graphElectric(path: Path, tempMgr: TempDataManager): Unit = {
     val measData = readFile(path, "kWh")
     val measPlotData = getPlotData(measData)
-//    val tempPlotData = getTempData(measData, tempMgr, "max")
+    val tempPlotData = getTempData(measData, tempMgr, "max")
 
     val measTrace = Scatter(
       values = measPlotData._1.map(dt =>
@@ -94,13 +94,13 @@ class Main {
       mode = ScatterMode(ScatterMode.Lines),
       yaxis = AxisReference.Y2
     )
-//    val tempTrace = Scatter(
-//      values = tempPlotData._1.map(dt =>
-//        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-//      secondValues = tempPlotData._2,
-//      mode = ScatterMode(ScatterMode.Lines)
-//    )
-    Seq(measTrace).plot(
+    val tempTrace = Scatter(
+      values = tempPlotData._1.map(dt =>
+        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+      secondValues = tempPlotData._2,
+      mode = ScatterMode(ScatterMode.Lines)
+    )
+    Seq(measTrace, tempTrace).plot(
       path = "electric.html",
       openInBrowser = true,
       title = "Electricity Usage",
@@ -115,7 +115,7 @@ class Main {
   def graphGas(path: Path, tempMgr: TempDataManager): Unit = {
     val measData = readFile(path, "CCF")
     val measPlotData = getPlotData(measData)
-//    val tempPlotData = getTempData(measData, tempMgr, "min")
+    val tempPlotData = getTempData(measData, tempMgr, "min")
 
     val measTrace = Scatter(
       values = measPlotData._1.map(dt =>
@@ -124,13 +124,13 @@ class Main {
       mode = ScatterMode(ScatterMode.Lines),
       yaxis = AxisReference.Y2
     )
-    //    val tempTrace = Scatter(
-    //      values = tempPlotData._1.map(dt =>
-    //        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-    //      secondValues = tempPlotData._2,
-    //      mode = ScatterMode(ScatterMode.Lines)
-    //    )
-    Seq(measTrace).plot(
+    val tempTrace = Scatter(
+      values = tempPlotData._1.map(dt =>
+        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+      secondValues = tempPlotData._2,
+      mode = ScatterMode(ScatterMode.Lines)
+    )
+    Seq(measTrace, tempTrace).plot(
       path = "gas.html",
       openInBrowser = true,
       title = "Gas Usage",
