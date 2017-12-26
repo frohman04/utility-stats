@@ -31,7 +31,7 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
   private val requestPerMinuteTracker = new RingBuffer[LocalDateTime](Client.requestsPerMinute)
   private var totalRequestsMade = 0
 
-  def getHistorical(date: LocalDateTime): HistoryResponse = {
+  def getHistorical(date: LocalDate): HistoryResponse = {
     if (LocalDate.from(date).equals(LocalDate.now())) {
       throw new IllegalArgumentException("Cannot query history for today")
     }
