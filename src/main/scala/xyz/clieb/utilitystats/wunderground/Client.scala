@@ -1,25 +1,62 @@
 package xyz.clieb.utilitystats.wunderground
 
+import xyz.clieb.utilitystats.Closable.closable
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.{Input, Output}
 import com.typesafe.scalalogging.LazyLogging
 
+import org.apache.commons.compress.compressors.gzip.{GzipCompressorInputStream, GzipCompressorOutputStream}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-import java.time.LocalDateTime
+import java.io.{FileInputStream, FileOutputStream}
+import java.nio.file.{Path, Paths}
+import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+import scala.util.{Failure, Success}
 import scalaj.http.Http
 
-class Client extends LazyLogging {
+class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLogging {
+  if (!storageDir.toFile.exists()) {
+    storageDir.toFile.mkdirs()
+  }
+  private val historyStorageDir = Paths.get(storageDir.toString, "history")
+  if (!historyStorageDir.toFile.exists()) {
+    historyStorageDir.toFile.mkdirs()
+  }
+
   private val historyParser = new HistoryResponseParser()
   private val requestPerMinuteTracker = new RingBuffer[LocalDateTime](Client.requestsPerMinute)
   private var totalRequestsMade = 0
 
   def getHistorical(date: LocalDateTime): HistoryResponse = {
+    if (LocalDate.from(date).equals(LocalDate.now())) {
+      throw new IllegalArgumentException("Cannot query history for today")
+    }
+
     val dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-    val url = s"${Client.apiBase}/history_${dateStr}/q/MA/Billerica.json"
-    historyParser.parseHistoryResponse(apiCall(url))
+    val cacheFile = Paths.get(historyStorageDir.toString, s"${dateStr}.kryo.gz")
+    val kryo = new Kryo()
+
+    if (cacheFile.toFile.exists()) {
+      closable(new Input(new GzipCompressorInputStream(new FileInputStream(cacheFile.toFile)))) { input =>
+        kryo.readObject(input, classOf[HistoryResponse])
+      } match {
+        case Success(r) => r
+        case Failure(e) => throw e
+      }
+    } else {
+      val url = s"${Client.apiBase}/history_${dateStr}/q/MA/Billerica.json"
+      val response = historyParser.parseHistoryResponse(apiCall(url))
+
+      closable(new Output(new GzipCompressorOutputStream(new FileOutputStream(cacheFile.toFile)))) { output =>
+        kryo.writeObject(output, response)
+      }
+
+      response
+    }
   }
 
   private def apiCall(url: String): JValue = {

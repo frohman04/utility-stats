@@ -22,6 +22,8 @@ libraryDependencies ++= Seq(
   "org.scalaj" %% "scalaj-http" % "2.3.0",
   "org.json4s" %% "json4s-core" % json4sVersion,
   "org.json4s" %% "json4s-jackson" % json4sVersion,
-  "org.plotly-scala" % "plotly-core_2.12" % plotlyVersion,
-  "org.plotly-scala" % "plotly-render_2.12" % plotlyVersion
+  "org.plotly-scala" %% "plotly-core" % plotlyVersion,
+  "org.plotly-scala" %% "plotly-render" % plotlyVersion,
+  "com.twitter" %% "chill" % "0.9.2",
+  "org.apache.commons" % "commons-compress" % "1.15"
 )
