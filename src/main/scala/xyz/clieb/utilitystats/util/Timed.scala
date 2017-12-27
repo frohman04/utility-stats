@@ -1,4 +1,4 @@
-package xyz.clieb.utilitystats
+package xyz.clieb.utilitystats.util
 
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 

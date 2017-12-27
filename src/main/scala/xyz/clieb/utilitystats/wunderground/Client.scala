@@ -17,7 +17,7 @@ import java.time.{LocalDate, LocalDateTime}
 import scala.util.{Failure, Success, Try}
 import scalaj.http.{Http, HttpStatusException}
 
-import xyz.clieb.utilitystats.Closable.closable
+import xyz.clieb.utilitystats.util.Closable.closable
 
 /**
   * A client for the Weather Underground API.

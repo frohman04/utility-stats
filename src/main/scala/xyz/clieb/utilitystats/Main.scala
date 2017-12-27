@@ -10,14 +10,13 @@ import java.time.temporal.ChronoUnit
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-import plotly._
-import plotly.element
+import plotly.Plotly._
+import plotly.{element, _}
 import plotly.element._
 import plotly.layout._
-import plotly.Plotly._
 import scopt.OptionParser
-import xyz.clieb.utilitystats.Closable._
-import xyz.clieb.utilitystats.Timed._
+import xyz.clieb.utilitystats.util.Closable._
+import xyz.clieb.utilitystats.util.Timed._
 
 object Main {
   def main(args: Array[String]): Unit = {
