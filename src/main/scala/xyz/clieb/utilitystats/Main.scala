@@ -1,21 +1,17 @@
 package xyz.clieb.utilitystats
 
-import com.github.tototoshi.csv.CSVReader
-
 import java.io.File
 import java.nio.file.Path
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 import scala.collection.mutable
-import scala.util.{Failure, Success}
 
 import plotly.Plotly._
-import plotly.{element, _}
 import plotly.element._
 import plotly.layout._
+import plotly.{element, _}
 import scopt.OptionParser
-import xyz.clieb.utilitystats.util.Closable._
 import xyz.clieb.utilitystats.util.Timed._
 
 object Main {
@@ -76,13 +72,14 @@ object Main {
 
 class Main {
   def run(electricPath: Path, gasPath: Path): Unit = {
+    val measurements = new Measurements()
     val tempMgr = new TempDataManager()
-    timed("Drawing electricity usage graph") { graphElectric(electricPath, tempMgr) }
-    timed("Drawing gas usage graph") { graphGas(gasPath, tempMgr) }
+    timed("Drawing electricity usage graph") { graphElectric(electricPath, measurements, tempMgr) }
+    timed("Drawing gas usage graph") { graphGas(gasPath, measurements, tempMgr) }
   }
 
-  def graphElectric(path: Path, tempMgr: TempDataManager): Unit = {
-    val measData = readFile(path, "kWh")
+  def graphElectric(path: Path, measurements: Measurements, tempMgr: TempDataManager): Unit = {
+    val measData = measurements.readFile(path, "kWh")
     val measPlotData = getPlotData(measData)
     val tempPlotData = getTempData(measData, tempMgr, "max")
 
@@ -116,8 +113,8 @@ class Main {
       ))
   }
 
-  def graphGas(path: Path, tempMgr: TempDataManager): Unit = {
-    val measData = readFile(path, "CCF")
+  def graphGas(path: Path, measurements: Measurements, tempMgr: TempDataManager): Unit = {
+    val measData = measurements.readFile(path, "CCF")
     val measPlotData = getPlotData(measData)
     val tempPlotData = getTempData(measData, tempMgr, "min")
 
@@ -149,25 +146,6 @@ class Main {
         side = Side.Right,
         overlaying = AxisAnchor.Reference(AxisReference.Y)
       ))
-  }
-
-  /**
-    * Read a CSV file of data, applying the provided units to each row.
-    *
-    * @param path the path of the CSV file to read
-    * @param units the units of the data being read
-    *
-    * @return list of measurements read from the file
-    */
-  def readFile(path: Path, units: String): Seq[Measurement] = {
-    closable(CSVReader.open(path.toFile)) { reader =>
-      reader.iterator.map { case (values: Seq[String]) =>
-        Measurement(LocalDate.parse(values(0)), values(1).toFloat, units)
-      }.seq.toList
-    } match {
-      case Success(v) => v
-      case Failure(e) => throw e
-    }
   }
 
   /**
@@ -222,15 +200,3 @@ class Main {
     )
   }
 }
-
-/**
-  * A single meter reading.
-  *
-  * @param date the date of the meter reading
-  * @param amount the amount of resources used since the last meter reading
-  * @param units the units that the measurement is in
-  */
-case class Measurement(
-    date: LocalDate,
-    amount: Float,
-    units: String)
