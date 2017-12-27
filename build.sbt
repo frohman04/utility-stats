@@ -17,7 +17,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2",
 
   "com.github.scopt" %% "scopt" % "3.7.0",
-  "org.apache.commons" % "commons-math3" % "3.6.1",
   "com.github.tototoshi" %% "scala-csv" % "1.3.5",
   "org.scalaj" %% "scalaj-http" % "2.3.0",
   "org.json4s" %% "json4s-core" % json4sVersion,
