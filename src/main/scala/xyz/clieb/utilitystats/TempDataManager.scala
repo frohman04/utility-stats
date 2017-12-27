@@ -14,7 +14,7 @@ import xyz.clieb.utilitystats.wunderground.{Client, Observation}
   * as they are requested to minimize aoumt of disk access needed.
   */
 class TempDataManager extends LazyLogging {
-  private val client = new Client()
+  private val client = new Client(enforceQuotas = false)
   private val cache = mutable.HashMap[LocalDate, Temp]()
 
   /**

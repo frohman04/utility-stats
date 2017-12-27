@@ -22,9 +22,12 @@ import xyz.clieb.utilitystats.Closable.closable
 /**
   * A client for the Weather Underground API.
   *
+  * @param enforceQuotas if true, stop when quotas reached
   * @param storageDir the directory to store cached responses in
   */
-class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLogging {
+class Client(
+    enforceQuotas: Boolean = true,
+    storageDir: Path = Paths.get("wunderground_cache")) extends LazyLogging {
   if (!storageDir.toFile.exists()) {
     storageDir.toFile.mkdirs()
   }
@@ -94,19 +97,21 @@ class Client(storageDir: Path = Paths.get("wunderground_cache")) extends LazyLog
     * @return the parsed JSON body of the request
     */
   private def apiCall(url: String, retries: Int = 2): JValue = {
-    totalRequestsMade += 1
-    if (totalRequestsMade > Client.requestsPerDay) {
-      throw new RuntimeException("Too many requests made for today")
-    }
+    if (enforceQuotas) {
+      totalRequestsMade += 1
+      if (totalRequestsMade > Client.requestsPerDay) {
+        throw new RuntimeException("Too many requests made for today")
+      }
 
-    val now = LocalDateTime.now()
-    if (requestPerMinuteTracker.peekTail != null &&
-        now.minusMinutes(1).isBefore(requestPerMinuteTracker.peekTail)) {
-      val sleep = requestPerMinuteTracker.peekTail.until(now, ChronoUnit.MILLIS)
-      logger.info(s"Requests per minute exceeded, sleeping ${sleep}")
-      Thread.sleep(sleep)
+      val now = LocalDateTime.now()
+      if (requestPerMinuteTracker.peekTail != null &&
+          now.minusMinutes(1).isBefore(requestPerMinuteTracker.peekTail)) {
+        val sleep = requestPerMinuteTracker.peekTail.until(now, ChronoUnit.MILLIS)
+        logger.info(s"Requests per minute exceeded, sleeping ${sleep}")
+        Thread.sleep(sleep)
+      }
+      requestPerMinuteTracker.add(now)
     }
-    requestPerMinuteTracker.add(now)
 
     logger.info(s"Calling Wunderground: ${url}")
     val response = Http(url).asString
