@@ -112,7 +112,8 @@ class Main {
       yaxis = Axis(title = "Avg High Temp (F)"),
       yaxis2 = Axis(
         title = "kWh used / day",
-        side = Side.Right
+        side = Side.Right,
+        overlaying = AxisAnchor.Reference(AxisReference.Y)
       ))
   }
 
@@ -146,7 +147,8 @@ class Main {
       yaxis = Axis(title = "Avg Low Temp (F)"),
       yaxis2 = Axis(
         title = "CCF used / day",
-        side = Side.Right
+        side = Side.Right,
+        overlaying = AxisAnchor.Reference(AxisReference.Y)
       ))
   }
 
