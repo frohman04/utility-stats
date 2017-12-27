@@ -1,5 +1,3 @@
-__pycache__
-*.pyc
-temp_data
 target
 .idea
+wunderground_cache
