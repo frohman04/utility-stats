@@ -27,7 +27,18 @@ class Grapher(
         .map(_.capitalize)
         .mkString(" ")
 
-    Seq(
+    val boxes: Seq[Box] = tempPlotData._1.zip(tempPlotData._2)
+        .map { case (date: LocalDate, temps: Seq[Float]) =>
+          Box(
+            y = temps,
+            name = date.toString,
+            orientation = Orientation.Vertical,
+            boxpoints = BoxPoints.False,
+            showlegend = false
+          )
+        }
+
+    (boxes ++ Seq(
       Scatter(
         measPlotData._1.map(dt =>
           element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
@@ -35,16 +46,8 @@ class Grapher(
         name = s"${measurements.typ} Usage",
         mode = ScatterMode(ScatterMode.Lines),
         yaxis = AxisReference.Y2
-      ),
-      Scatter(
-        tempPlotData._1.map(dt =>
-          element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-        tempPlotData._2,
-        name = "Temperature",
-        mode = ScatterMode(ScatterMode.Lines),
-        yaxis = AxisReference.Y
       )
-    ).plot(
+    )).plot(
       path = s"${measurements.typ.toLowerCase}.html",
       openInBrowser = true,
       title = s"${measurements.typ} Usage",
@@ -88,14 +91,14 @@ class Grapher(
   private def getTempData(
       utilData: Seq[Measurement],
       tempMgr: TempDataManager,
-      measurement: TempType): (Seq[LocalDate], Seq[Float]) = {
-    val getAvgTemp = measurement match {
+      measurement: TempType): (Seq[LocalDate], Seq[Seq[Float]]) = {
+    val getTemp = measurement match {
       case TempType.LOW =>
-        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMinTemp(fromDate, toDate)
+        (temp: Temp) => temp.min
       case TempType.AVERAGE =>
-        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMeanTemp(fromDate, toDate)
+        (temp: Temp) => temp.mean
       case TempType.HIGH =>
-        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMaxTemp(fromDate, toDate)
+        (temp: Temp) => temp.max
     }
 
     (
@@ -103,7 +106,8 @@ class Grapher(
         utilData
             .zip(utilData.tail)
             .map { case (prev: Measurement, curr: Measurement) =>
-              getAvgTemp(prev.date, curr.date)
+              tempMgr.dateRange(prev.date, curr.date)
+                    .map(date => getTemp(tempMgr.getTemp(date)))
             }
     )
   }

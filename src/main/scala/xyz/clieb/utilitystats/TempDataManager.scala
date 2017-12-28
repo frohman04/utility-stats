@@ -68,6 +68,23 @@ class TempDataManager extends LazyLogging {
     getAvgTemp(fromDate, toDate, (x: Temp) => x.max)
 
   /**
+    * Generate a range of dates across a range.
+    *
+    * @param startDate the first date in the range (inclusive)
+    * @param endDate the last date in the range (exclusive)
+    */
+  def dateRange(startDate: LocalDate, endDate: LocalDate): Stream[LocalDate] = {
+    def nextDate(date: LocalDate, lastDate: LocalDate): Stream[LocalDate] =
+      if (date.compareTo(lastDate) == 0) {
+        Stream.empty
+      } else {
+        date #:: nextDate(date.plusDays(1), endDate)
+      }
+
+    nextDate(startDate, endDate)
+  }
+
+  /**
     * Get the average temperature over a range of days, using each day's mean temperature in
     * Farenheit as the data point to average.
     *
@@ -78,23 +95,6 @@ class TempDataManager extends LazyLogging {
     * @return the average temperature in Farenheit
     */
   private def getAvgTemp(fromDate: LocalDate, toDate: LocalDate, selector: (Temp) => Float): Float = {
-    /**
-      * Generate a range of dates across a range.
-      *
-      * @param startDate the first date in the range (inclusive)
-      * @param endDate the last date in the range (exclusive)
-      */
-    def dateRange(startDate: LocalDate, endDate: LocalDate): Stream[LocalDate] = {
-      def nextDate(date: LocalDate, lastDate: LocalDate): Stream[LocalDate] =
-        if (date.compareTo(lastDate) == 0) {
-          Stream.empty
-        } else {
-          date #:: nextDate(date.plusDays(1), endDate)
-        }
-
-      nextDate(startDate, endDate)
-    }
-
     val temps = dateRange(fromDate, toDate)
         .map(date => selector(getTemp(date)))
         .toList
