@@ -61,13 +61,15 @@ private[wunderground] class Parser {
     * Parse an Int from a String field, replacing "N/A" and negative numbers with None.
     */
   protected def parseInt(node: JValue): Option[Int] =
-    safeParse[Int](node, str => str.toInt, value => value >= 0)
+    safeParse[Int](node, str => str.toInt, value => value != -999 && value != -9999)
 
   /**
     * Parse a Float from a String field, replacing "N/A" and negative numbers with None.
     */
   protected def parseFloat(node: JValue): Option[Float] =
-    safeParse[Float](node, str => str.toFloat, value => value >= 0)
+    safeParse[Float](node, str => str.toFloat, value =>
+      Math.abs(value - -999) >= 0.01 &&
+        Math.abs(value - -9999) >= 0.01)
 
   /**
     * Parse a Boolean from a String field ("0" == false, "1" == true), replacing "N/A" and negative
