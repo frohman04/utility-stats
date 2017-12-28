@@ -2,15 +2,9 @@ package xyz.clieb.utilitystats
 
 import java.io.File
 import java.nio.file.Path
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 
 import scala.collection.mutable
 
-import plotly.Plotly._
-import plotly.element._
-import plotly.layout._
-import plotly.{element, _}
 import scopt.OptionParser
 import xyz.clieb.utilitystats.util.Timed._
 
@@ -72,131 +66,14 @@ object Main {
 
 class Main {
   def run(electricPath: Path, gasPath: Path): Unit = {
-    val measurements = new Measurements()
     val tempMgr = new TempDataManager()
-    timed("Drawing electricity usage graph") { graphElectric(electricPath, measurements, tempMgr) }
-    timed("Drawing gas usage graph") { graphGas(gasPath, measurements, tempMgr) }
-  }
-
-  def graphElectric(path: Path, measurements: Measurements, tempMgr: TempDataManager): Unit = {
-    val measData = measurements.readFile(path, "kWh")
-    val measPlotData = getPlotData(measData)
-    val tempPlotData = getTempData(measData, tempMgr, "max")
-
-    Seq(
-      Scatter(
-        measPlotData._1.map(dt =>
-          element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-        measPlotData._2,
-        name = "Electricity Usage",
-        mode = ScatterMode(ScatterMode.Lines),
-        yaxis = AxisReference.Y2
-      ),
-      Scatter(
-        tempPlotData._1.map(dt =>
-          element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-        tempPlotData._2,
-        name = "Temperature",
-        mode = ScatterMode(ScatterMode.Lines),
-        yaxis = AxisReference.Y
-      )
-    ).plot(
-      path = "electric.html",
-      openInBrowser = true,
-      title = "Electricity Usage",
-      xaxis = Axis(title = "Measurement Date"),
-      yaxis = Axis(title = "Avg High Temp (F)"),
-      yaxis2 = Axis(
-        title = "kWh used / day",
-        side = Side.Right,
-        overlaying = AxisAnchor.Reference(AxisReference.Y)
-      ))
-  }
-
-  def graphGas(path: Path, measurements: Measurements, tempMgr: TempDataManager): Unit = {
-    val measData = measurements.readFile(path, "CCF")
-    val measPlotData = getPlotData(measData)
-    val tempPlotData = getTempData(measData, tempMgr, "min")
-
-    Seq(
-      Scatter(
-        measPlotData._1.map(dt =>
-          element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-        measPlotData._2,
-        name = "Gas Usage",
-        mode = ScatterMode(ScatterMode.Lines),
-        yaxis = AxisReference.Y2
-      ),
-      Scatter(
-        tempPlotData._1.map(dt =>
-          element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-        tempPlotData._2,
-        name = "Temperature",
-        mode = ScatterMode(ScatterMode.Lines),
-        yaxis = AxisReference.Y
-      )
-    ).plot(
-      path = "gas.html",
-      openInBrowser = true,
-      title = "Gas Usage",
-      xaxis = Axis(title = "Measurement Date"),
-      yaxis = Axis(title = "Avg Low Temp (F)"),
-      yaxis2 = Axis(
-        title = "CCF used / day",
-        side = Side.Right,
-        overlaying = AxisAnchor.Reference(AxisReference.Y)
-      ))
-  }
-
-  /**
-    * Get the plottable data series for a given measurement dataset.
-    *
-    * @param data the measurements to get plot data for
-    *
-    * @return (X data points, Y data points)
-    */
-  def getPlotData(data: Seq[Measurement]): (Seq[LocalDate], Seq[Float]) = {
-    (
-        data.drop(1).map(_.date),
-        data
-            .zip(data.tail)
-            .map { case (prev: Measurement, curr: Measurement) =>
-              val numDays = ChronoUnit.DAYS.between(prev.date, curr.date)
-              curr.amount / numDays
-            }
-    )
-  }
-
-  /**
-    * Get the temperature data to plot for a set of data for a utility.
-    *
-    * @param utilData the measurements for a utility's usage
-    * @param tempMgr the temperature datamanager to query for temperature data
-    * @param measurement one of 'min', 'mean', 'max'
-    *
-    * @return (X data points, Y data points)
-    */
-  def getTempData(utilData: Seq[Measurement], tempMgr: TempDataManager, measurement: String):
-  (Seq[LocalDate], Seq[Float]) = {
-    val getAvgTemp = measurement match {
-      case "min" =>
-        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMinTemp(fromDate, toDate)
-      case "mean" =>
-        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMeanTemp(fromDate, toDate)
-      case "max" =>
-        (fromDate: LocalDate, toDate: LocalDate) => tempMgr.getAvgMaxTemp(fromDate, toDate)
-      case a: Any =>
-        throw new IllegalArgumentException(
-          s"Unknown measurement type: ${a}; expected one of min, mean, max")
+    timed("Drawing electricity usage graph") {
+      new Grapher(new Measurements(electricPath, "Electricity", "kWh", TempType.HIGH), tempMgr)
+          .render()
     }
-
-    (
-        utilData.drop(1).map(_.date),
-        utilData
-            .zip(utilData.tail)
-            .map { case (prev: Measurement, curr: Measurement) =>
-              getAvgTemp(prev.date, curr.date)
-            }
-    )
+    timed("Drawing gas usage graph") {
+      new Grapher(new Measurements(gasPath, "Gas", "CCF", TempType.LOW), tempMgr)
+          .render()
+    }
   }
 }

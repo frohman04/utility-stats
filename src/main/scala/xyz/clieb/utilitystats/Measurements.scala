@@ -9,16 +9,19 @@ import scala.util.{Failure, Success}
 
 import xyz.clieb.utilitystats.util.Closable.closable
 
-class Measurements {
+/**
+  * @param path the path of the CSV file to read
+  * @param typ the type of utility being measured
+  * @param units the units of the data being read
+  * @param comparisonTempType the type of temperature to compare the measurements against
+  */
+class Measurements(path: Path, val typ: String, val units: String, val comparisonTempType: TempType) {
   /**
     * Read a CSV file of data, applying the provided units to each row.
     *
-    * @param path the path of the CSV file to read
-    * @param units the units of the data being read
-    *
     * @return list of measurements read from the file
     */
-  def readFile(path: Path, units: String): Seq[Measurement] = {
+  def readFile(): Seq[Measurement] = {
     closable(CSVReader.open(path.toFile)) { reader =>
       reader.iterator.map { case (values: Seq[String]) =>
         Measurement(LocalDate.parse(values(0)), values(1).toFloat, units)
