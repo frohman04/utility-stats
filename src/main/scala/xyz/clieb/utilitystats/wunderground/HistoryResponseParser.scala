@@ -45,7 +45,7 @@ private[wunderground] class HistoryResponseParser extends Parser {
     val windChillF = parseFloat(node \ "windchilli")
     val heatIndexF = parseFloat(node \ "heatindexi")
     val precipitationIn = parseFloat(node \ "precipi")
-    val conditions = (node \ "conds").extract[String]
+    val conditions = Option((node \ "conds").extract[String])
     val fog = parseBool(node \ "fog")
     val rain = parseBool(node \ "rain")
     val snow = parseBool(node \ "snow")

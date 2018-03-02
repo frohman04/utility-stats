@@ -1,5 +1,7 @@
 package xyz.clieb.utilitystats.wunderground
 
+import com.google.protobuf.timestamp.Timestamp
+
 import org.json4s.{DefaultFormats, JValue}
 
 import java.time.{ZoneId, ZonedDateTime}
@@ -26,13 +28,13 @@ private[wunderground] class Parser {
   }
 
   /**
-    * Parse the "date" JSON object into a ZonedDateTime object.
+    * Parse the "date" JSON object into a Timestamp object.
     *
     * @param node node for the object assigned to a "date" key
     *
     * @return the date/time represented by the date object
     */
-  protected def parseDate(node: JValue): ZonedDateTime = {
+  protected def parseDate(node: JValue): Timestamp = {
     val year = parseInt(node \ "year").get
     val month = parseInt(node \ "mon").get
     val day = parseInt(node \ "mday").get
@@ -40,7 +42,7 @@ private[wunderground] class Parser {
     val minute = parseInt(node \ "min").get
     val zone = parseString(node \ "tzname").get
 
-    ZonedDateTime.of(
+    val zdt = ZonedDateTime.of(
       year,
       month,
       day,
@@ -49,6 +51,10 @@ private[wunderground] class Parser {
       0,
       0,
       ZoneId.of(zone))
+
+    val ts = java.sql.Timestamp.from(zdt.toInstant)
+
+    Timestamp(ts.getTime, ts.getNanos)
   }
 
   /**

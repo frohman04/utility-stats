@@ -1,0 +1,43 @@
+syntax = "proto2";
+
+package xyz.clieb.utilitystats;
+
+import "google/protobuf/timestamp.proto";
+
+message HistoryResponse {
+    required ResponseHeader header = 1;
+    required History history = 2;
+}
+
+message ResponseHeader {
+    required string version = 1;
+    required string termsOfService = 2;
+    map<string, int32> features = 3;
+}
+
+message History {
+    required google.protobuf.Timestamp date = 1;
+    repeated Observation observations = 2;
+}
+
+message Observation {
+    required google.protobuf.Timestamp date = 1;
+    optional float tempF = 2;
+    optional float dewPtF = 3;
+    optional int32 humidity = 4;
+    optional float windSpeedMph = 5;
+    optional float windGustMph = 6;
+    optional int32 windDirDeg = 7;
+    optional float visibilityMiles = 8;
+    optional float pressureInHg = 9;
+    optional float windChillF = 10;
+    optional float heatIndexF = 11;
+    optional float precipitationIn = 12;
+    optional string conditions = 13;
+    optional bool fog = 14;
+    optional bool rain = 15;
+    optional bool snow = 16;
+    optional bool hail = 17;
+    optional bool thunder = 18;
+    optional bool tornado = 19;
+}
