@@ -1,7 +1,5 @@
 package xyz.clieb.utilitystats.wunderground
 
-import com.esotericsoftware.kryo.io.{Input, Output}
-import com.twitter.chill.ScalaKryoInstantiator
 import com.typesafe.scalalogging.LazyLogging
 
 import org.apache.commons.compress.compressors.gzip.{GzipCompressorInputStream, GzipCompressorOutputStream}
@@ -40,12 +38,6 @@ class Client(
   private val requestPerMinuteTracker = new RingBuffer[LocalDateTime](Client.requestsPerMinute)
   private var totalRequestsMade = 0
 
-  private val kryo = new ScalaKryoInstantiator().newKryo()
-  kryo.register(classOf[HistoryResponse])
-  kryo.register(classOf[ResponseHeader])
-  kryo.register(classOf[History])
-  kryo.register(classOf[Observation])
-
   /**
     * Get the weather conditions throughout the day for a day in the past.
     *
@@ -62,11 +54,12 @@ class Client(
     }
 
     val dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-    val cacheFile = Paths.get(historyStorageDir.toString, s"${dateStr}.kryo.gz")
+    val cacheFile = Paths.get(historyStorageDir.toString, s"${dateStr}.proto.gz")
 
     if (cacheFile.toFile.exists()) {
-      closable(new Input(new GzipCompressorInputStream(new FileInputStream(cacheFile.toFile)))) { input =>
-        kryo.readObject(input, classOf[HistoryResponse])
+
+      closable(new GzipCompressorInputStream(new FileInputStream(cacheFile.toFile))) { input =>
+        HistoryResponse.parseFrom(input)
       } match {
         case Success(r) => r
         case Failure(e) => throw e
@@ -75,8 +68,8 @@ class Client(
       val url = s"${Client.apiBase}/history_${dateStr}/q/MA/Billerica.json"
       val response = historyParser.parseHistoryResponse(apiCall(url))
 
-      closable(new Output(new GzipCompressorOutputStream(new FileOutputStream(cacheFile.toFile)))) { output =>
-        kryo.writeObject(output, response)
+      closable(new GzipCompressorOutputStream(new FileOutputStream(cacheFile.toFile))) { output =>
+        response.writeTo(output)
       }
 
       response

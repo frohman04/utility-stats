@@ -23,7 +23,6 @@ libraryDependencies ++= Seq(
   "org.json4s" %% "json4s-jackson" % json4sVersion,
   "org.plotly-scala" %% "plotly-core" % plotlyVersion,
   "org.plotly-scala" %% "plotly-render" % plotlyVersion,
-  "com.twitter" %% "chill" % "0.9.2",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.commons" % "commons-compress" % "1.15"
 )
