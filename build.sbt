@@ -24,7 +24,8 @@ libraryDependencies ++= Seq(
   "org.plotly-scala" %% "plotly-core" % plotlyVersion,
   "org.plotly-scala" %% "plotly-render" % plotlyVersion,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-  "org.apache.commons" % "commons-compress" % "1.15"
+  "org.apache.commons" % "commons-compress" % "1.15",
+  "org.apache.commons" % "commons-math3" % "3.6.1"
 )
 
 PB.targets in Compile := Seq(

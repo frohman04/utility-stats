@@ -3,6 +3,7 @@ package xyz.clieb.utilitystats
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
+import org.apache.commons.math3.stat.regression.SimpleRegression
 import plotly.Plotly._
 import plotly.element._
 import plotly.layout._
@@ -11,34 +12,29 @@ import plotly.{element, _}
 class AllUtilGrapher(
     electricData: Seq[Measurement],
     gasData: Seq[Measurement],
-    tempMgr: TempDataManager = new TempDataManager()) {
+    tempMgr: TempDataManager = new TempDataManager(),
+    loessDays: Int = 14) {
   def render(): Unit = {
     implicit val localDateOrdering: Ordering[LocalDate] = Ordering.by(_.toEpochDay)
     val measDates = (electricData.map(_.date) ++ gasData.map(_.date))
       .distinct
       .sorted
-    val tempPlotData = getTempData(measDates, tempMgr)
+
+    val dailyTempPlotData = tempMgr
+      .dateRange(measDates.head, measDates.reverse.head)
+      .map(date => (date, tempMgr.getTemp(date).mean))
+    val loessTempPlotData = loessSimpleRegressionSeries(dailyTempPlotData, loessDays)
 
     val electricMeasPlotData = getPlotData(electricData)
     val gasMeasPlotData = getPlotData(gasData)
 
-    val boxes: Seq[Box] = tempPlotData._1.zip(tempPlotData._2)
-      .map { case (date: LocalDate, temps: Seq[Float]) =>
-        Box(
-          y = temps,
-          name = date.toString,
-          orientation = Orientation.Vertical,
-          boxpoints = BoxPoints.False,
-          showlegend = false
-        )
-      }
-
-    (boxes ++ Seq(
+    Seq(
+      dataToScatter(loessTempPlotData, s"Temp (F)", AxisReference.Y),
       dataToScatter(electricMeasPlotData, "Electric (kWh)", AxisReference.Y2),
       dataToScatter(gasMeasPlotData, "Gas (CCF)", AxisReference.Y3)
-    )).plot(
+    ).plot(
       path = "all-utilities.html",
-      title = s"All Utilities Usage per Day",
+      title = s"All Utilities Usage per Day vs Average ${loessDays}-day Smoothed Temperature",
       xaxis = Axis(title = "Measurement Date"),
       yaxis = Axis(title = s"Avg Temp (F)"),
       yaxis2 = Axis(
@@ -52,16 +48,6 @@ class AllUtilGrapher(
         overlaying = AxisAnchor.Reference(AxisReference.Y)
       ))
   }
-
-  private def dataToScatter(measPlotData: (Seq[LocalDate], Seq[Float]), typ: String, yaxis: AxisReference): Scatter =
-    Scatter(
-      measPlotData._1.map(dt =>
-        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
-      measPlotData._2,
-      name = typ,
-      mode = ScatterMode(ScatterMode.Lines),
-      yaxis = yaxis
-    )
 
   /**
     * Get the plottable data series for a given measurement dataset.
@@ -82,24 +68,40 @@ class AllUtilGrapher(
     )
   }
 
-  /**
-    * Get the temperature data to plot for a set of data for a utility.
-    *
-    * @param utilData the measurements for a utility's usage
-    * @param tempMgr the temperature datamanager to query for temperature data
-    *
-    * @return (X data points, Y data points)
-    */
-  private def getTempData(
-      utilData: Seq[LocalDate],
-      tempMgr: TempDataManager): (Seq[LocalDate], Seq[Seq[Float]]) =
-    (
-      utilData.drop(1),
-      utilData
-        .zip(utilData.tail)
-        .map { case (prev: LocalDate, curr: LocalDate) =>
-          tempMgr.dateRange(prev, curr)
-            .map(date => tempMgr.getTemp(date).mean)
-        }
+  private def loessSimpleRegressionSeries(data: Seq[(LocalDate, Float)], numDays: Int): (Seq[LocalDate], Seq[Float]) = {
+    val baseDate = data.head._1
+
+    val zippedOut = data
+      .map { case (date: LocalDate, _) =>
+        val lowerBound = date.minusDays(numDays / 2)
+        val upperBound = date.plusDays((numDays - 1) / 2)
+
+        val windowDays = data
+          .filter { case (date: LocalDate, _) =>
+            lowerBound.compareTo(date) <= 0 && date.compareTo(upperBound) <= 0
+          }
+          .map { case (date: LocalDate, temp: Float) =>
+            (date.toEpochDay - baseDate.toEpochDay, temp)
+          }
+
+        val regression = new SimpleRegression()
+        windowDays.foreach(day => regression.addData(day._1, day._2))
+        (
+          date,
+          regression.predict(date.toEpochDay - baseDate.toEpochDay).toFloat
+        )
+      }
+
+    (zippedOut.map(_._1), zippedOut.map(_._2))
+  }
+
+  private def dataToScatter(measPlotData: (Seq[LocalDate], Seq[Float]), name: String, yaxis: AxisReference): Scatter =
+    Scatter(
+      measPlotData._1.map(dt =>
+        element.LocalDateTime(dt.getYear, dt.getMonthValue, dt.getDayOfMonth, 0, 0, 0)),
+      measPlotData._2,
+      name = name,
+      mode = ScatterMode(ScatterMode.Lines),
+      yaxis = yaxis
     )
 }
