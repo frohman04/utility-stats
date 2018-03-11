@@ -11,7 +11,11 @@ import xyz.clieb.utilitystats.util.Timed._
 object Main {
   def main(args: Array[String]): Unit = {
     parser.parse(args, Options()) match {
-      case Some(s) => new Main().run(s.electricPath.get.toPath, s.gasPath.get.toPath, s.smoothingDays.get)
+      case Some(s) => new Main().run(
+        s.electricPath.get.toPath,
+        s.gasPath.get.toPath,
+        s.smoothingDays.get,
+        s.individual.get)
       case None =>
     }
   }
@@ -19,7 +23,8 @@ object Main {
   case class Options(
       electricPath: Option[File] = None,
       gasPath: Option[File] = None,
-      smoothingDays: Option[Int] = None)
+      smoothingDays: Option[Int] = None,
+      individual: Option[Boolean] = None)
 
   val parser: OptionParser[Options] = new OptionParser[Options]("utility-stats") {
     head("utility-stats", "0.1")
@@ -36,6 +41,10 @@ object Main {
       .optional()
       .withFallback(() => 14)
       .action((x, c) => c.copy(smoothingDays = Some(x)))
+    opt[Boolean]('i', "individual")
+      .optional()
+      .withFallback(() => false)
+      .action((x, c) => c.copy(individual = Some(x)))
 
 
     def validateFile(path: Option[File], name: String, isRequired: Boolean = true): Either[String, Unit] =
@@ -75,24 +84,27 @@ object Main {
 }
 
 class Main {
-  def run(electricPath: Path, gasPath: Path, smoothingDays: Int): Unit = {
+  def run(electricPath: Path, gasPath: Path, smoothingDays: Int, individualGraphs: Boolean): Unit = {
     val tempMgr = new TempDataManager()
-    timed("Drawing electricity usage graph") {
-      new Grapher(new Measurements(electricPath, "Electricity", "kWh", TempType.HIGH), tempMgr)
+    if (individualGraphs) {
+      timed("Drawing electricity usage graph") {
+        new Grapher(new Measurements(electricPath, "Electricity", "kWh", TempType.HIGH), tempMgr)
           .render()
-    }
-    timed("Drawing gas usage graph") {
-      new Grapher(new Measurements(gasPath, "Gas", "CCF", TempType.LOW), tempMgr)
+      }
+      timed("Drawing gas usage graph") {
+        new Grapher(new Measurements(gasPath, "Gas", "CCF", TempType.LOW), tempMgr)
           .render()
-    }
-    timed("Drawing all util usage graph") {
-      new AllUtilGrapher(
-        new Measurements(electricPath, "Electricity", "kWh", TempType.AVERAGE).readFile(),
-        new Measurements(gasPath, "Gas", "CCF", TempType.AVERAGE).readFile(),
-        tempMgr,
-        smoothingDays
-      )
-        .render()
+      }
+    } else {
+      timed("Drawing all util usage graph") {
+        new AllUtilGrapher(
+          new Measurements(electricPath, "Electricity", "kWh", TempType.AVERAGE).readFile(),
+          new Measurements(gasPath, "Gas", "CCF", TempType.AVERAGE).readFile(),
+          tempMgr,
+          smoothingDays
+        )
+          .render()
+      }
     }
   }
 }
