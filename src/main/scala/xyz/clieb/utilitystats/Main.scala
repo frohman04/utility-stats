@@ -20,7 +20,7 @@ object Main {
       electricPath: Option[File] = None,
       gasPath: Option[File] = None)
 
-  val parser = new OptionParser[Options]("utility-stats") {
+  val parser: OptionParser[Options] = new OptionParser[Options]("utility-stats") {
     head("utility-stats", "0.1")
 
     arg[File]("<electric_file>").action((x, c) =>
@@ -74,6 +74,14 @@ class Main {
     timed("Drawing gas usage graph") {
       new Grapher(new Measurements(gasPath, "Gas", "CCF", TempType.LOW), tempMgr)
           .render()
+    }
+    timed("Drawing all util usage graph") {
+      new AllUtilGrapher(
+        new Measurements(electricPath, "Electricity", "kWh", TempType.AVERAGE).readFile(),
+        new Measurements(gasPath, "Gas", "CCF", TempType.AVERAGE).readFile(),
+        tempMgr
+      )
+        .render()
     }
   }
 }
