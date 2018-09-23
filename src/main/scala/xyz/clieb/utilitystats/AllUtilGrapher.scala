@@ -22,7 +22,9 @@ class AllUtilGrapher(
 
     val dailyTempPlotData = tempMgr
       .dateRange(measDates.head, measDates.reverse.head)
-      .map(date => (date, tempMgr.getTemp(date).mean))
+      .map(date => (date, tempMgr.getTemp(date)))
+      .filter { case (_, temp: Option[Temp]) => temp.isDefined }
+      .map { case (date: LocalDate, temp: Option[Temp]) => (date, temp.get.mean) }
     val loessTempPlotData = loessSimpleRegressionSeries(dailyTempPlotData, loessDays)
 
     val electricMeasPlotData = getPlotData(electricData)

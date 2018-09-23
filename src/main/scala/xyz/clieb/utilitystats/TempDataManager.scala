@@ -15,7 +15,7 @@ import xyz.clieb.utilitystats.wunderground.{Client, Observation}
   */
 class TempDataManager extends LazyLogging {
   private val client = new Client(enforceQuotas = false)
-  private val cache = mutable.HashMap[LocalDate, Temp]()
+  private val cache = mutable.HashMap[LocalDate, Option[Temp]]()
 
   /**
     * Get the mean temperature in Farenheit for a given day.
@@ -24,7 +24,7 @@ class TempDataManager extends LazyLogging {
     *
     * @return the mean temperature in Farenheit
     */
-  def getTemp(date: LocalDate): Temp = {
+  def getTemp(date: LocalDate): Option[Temp] = {
     if (!cache.contains(date)) {
       cache(date) = fetchData(date)
     }
@@ -96,7 +96,7 @@ class TempDataManager extends LazyLogging {
     */
   private def getAvgTemp(fromDate: LocalDate, toDate: LocalDate, selector: (Temp) => Float): Float = {
     val temps = dateRange(fromDate, toDate)
-        .map(date => selector(getTemp(date)))
+        .map(date => selector(getTemp(date).get))
         .toList
     temps.sum / temps.size
   }
@@ -105,18 +105,24 @@ class TempDataManager extends LazyLogging {
     * Fetch the temperature data for a given date.  This data can come from disk cache or direct
     * from the WUnderground API.
     */
-  private def fetchData(date: LocalDate): Temp = {
+  private def fetchData(date: LocalDate): Option[Temp] = {
     val data = client.getHistorical(date)
 
     val temps = data.history.observations
         .map { case (obs: Observation) => obs.tempF }
         .filter { case (temp: Option[Float]) => temp.isDefined }
         .map { case (temp: Option[Float]) => temp.get }
-    val min = temps.min
-    val max = temps.max
-    val mean = temps.sum / temps.size
 
-    Temp(min, mean, max)
+    if (temps.nonEmpty) {
+      val min = temps.min
+      val max = temps.max
+      val mean = temps.sum / temps.size
+
+      Some(Temp(min, mean, max))
+    } else {
+      logger.warn(s"No temperature data present for ${date}")
+      None
+    }
   }
 }
 

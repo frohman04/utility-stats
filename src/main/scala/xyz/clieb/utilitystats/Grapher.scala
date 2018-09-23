@@ -107,7 +107,7 @@ class Grapher(
             .zip(utilData.tail)
             .map { case (prev: Measurement, curr: Measurement) =>
               tempMgr.dateRange(prev.date, curr.date)
-                    .map(date => getTemp(tempMgr.getTemp(date)))
+                    .map(date => getTemp(tempMgr.getTemp(date).get))
             }
     )
   }
