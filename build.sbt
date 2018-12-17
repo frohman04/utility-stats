@@ -2,11 +2,11 @@ name := "utility-stats"
 
 version := "0.1"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 val slf4jVersion = "1.7.25"
-val plotlyVersion = "0.4.2"
-val json4sVersion = "3.6.1"
+val plotlyVersion = "0.5.3"
+val json4sVersion = "3.6.2"
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3" % "runtime",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
 
-  "com.github.scopt" %% "scopt" % "3.7.0",
+  "com.github.scopt" %% "scopt" % "3.7.1",
   "com.github.tototoshi" %% "scala-csv" % "1.3.5",
   "org.scalaj" %% "scalaj-http" % "2.4.1",
   "org.json4s" %% "json4s-core" % json4sVersion,
