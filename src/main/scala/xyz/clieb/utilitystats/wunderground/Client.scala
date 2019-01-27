@@ -89,7 +89,7 @@ class Client(
     *
     * @return the parsed JSON body of the request
     */
-  private def apiCall(url: String, retries: Int = 2): JValue = {
+  private def apiCall(url: String, retries: Int = 5): JValue = {
     if (enforceQuotas) {
       totalRequestsMade += 1
       if (totalRequestsMade > Client.requestsPerDay) {
@@ -107,9 +107,10 @@ class Client(
     }
 
     logger.info(s"Calling Wunderground: ${url}")
-    val response = Http(url).asString
 
     try {
+      val response = Http(url).asString
+
       val rawBody = Try(response.throwError.body) match {
         case Success(body) => body
         case Failure(e: HttpStatusException) =>
@@ -120,7 +121,11 @@ class Client(
               }
               .map { case (key: String, value: String) => s"${key}: ${value}" }
               .mkString("\n")
-          logger.error(s"${e.code} ${e.statusLine}\n${headers}\n\n${response.body}")
+          if (e.code == 404) {
+            logger.error(s"${e.code} ${e.statusLine}\n${headers}}")
+          } else {
+            logger.error(s"${e.code} ${e.statusLine}\n${headers}\n\n${response.body}")
+          }
 
           throw e
         case Failure(e) =>
@@ -139,7 +144,7 @@ class Client(
         // retry the request if it fails for any reason and there are retry attempts remaining
         if (retries > 0) {
           val remaining = retries - 1
-          logger.warn(s"API call failed, retrying (${remaining} remaining)")
+          logger.warn(s"API call failed, retrying (${remaining} remaining) (${e.getMessage})")
           apiCall(url, remaining)
         } else {
           throw e
