@@ -20,18 +20,24 @@ class AllUtilGrapher(
       .distinct
       .sorted
 
-    val dailyTempPlotData = tempMgr
+    val dailyTempData = tempMgr
       .dateRange(measDates.head, measDates.reverse.head)
       .map(date => (date, tempMgr.getTemp(date)))
       .filter { case (_, temp: Option[Temp]) => temp.isDefined }
-      .map { case (date: LocalDate, temp: Option[Temp]) => (date, temp.get.mean) }
-    val loessTempPlotData = loessSimpleRegressionSeries(dailyTempPlotData, loessDays)
+      .seq
+    val dailyMaxTempPlotData = dailyTempData
+      .map { case (date: LocalDate, temp: Option[Temp]) => (date, temp.get.max) }
+    val dailyMinTempPlotData = dailyTempData
+      .map { case (date: LocalDate, temp: Option[Temp]) => (date, temp.get.min) }
+    val loessMaxTempPlotData = loessSimpleRegressionSeries(dailyMaxTempPlotData, loessDays)
+    val loessMinTempPlotData = loessSimpleRegressionSeries(dailyMinTempPlotData, loessDays)
 
     val electricMeasPlotData = getPlotData(electricData)
     val gasMeasPlotData = getPlotData(gasData)
 
     Seq(
-      dataToScatter(loessTempPlotData, s"Temp (F)", AxisReference.Y),
+      dataToScatter(loessMaxTempPlotData, s"Max Temp (F)", AxisReference.Y),
+      dataToScatter(loessMinTempPlotData, s"Min Temp (F)", AxisReference.Y),
       dataToScatter(electricMeasPlotData, "Electric (kWh/day)", AxisReference.Y2),
       dataToScatter(gasMeasPlotData, "Gas (CCF/day)", AxisReference.Y3)
     ).plot(
