@@ -32,8 +32,8 @@ class AllUtilGrapher(
 
     Seq(
       dataToScatter(loessTempPlotData, s"Temp (F)", AxisReference.Y),
-      dataToScatter(electricMeasPlotData, "Electric (kWh)", AxisReference.Y2),
-      dataToScatter(gasMeasPlotData, "Gas (CCF)", AxisReference.Y3)
+      dataToScatter(electricMeasPlotData, "Electric (kWh/day)", AxisReference.Y2),
+      dataToScatter(gasMeasPlotData, "Gas (CCF/day)", AxisReference.Y3)
     ).plot(
       path = "all-utilities.html",
       title = s"All Utilities Usage per Day vs Average ${loessDays}-day Smoothed Temperature",
