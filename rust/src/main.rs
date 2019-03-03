@@ -55,22 +55,53 @@ fn main() -> () {
     let electric = timed!(
         "Reading electric data from {}",
         electric_file,
-        (|| Measurements::from_file(
-            Path::new(electric_file),
-            "Electricity".to_string(),
-            "kWh".to_string(),
-        )
-        .expect("Unable to read electric data"))
+        (|| {
+            let measurements = Measurements::from_file(
+                Path::new(electric_file),
+                "Electricity".to_string(),
+                "kWh".to_string(),
+            )
+            .expect("Unable to read electric data");
+
+            info!(
+                "Read {} records covering {} days",
+                measurements.data.len(),
+                measurements
+                    .data
+                    .last()
+                    .unwrap()
+                    .date
+                    .signed_duration_since(measurements.data[0].date)
+                    .num_days()
+            );
+
+            measurements
+        })
     );
-    println!("{:?}", electric);
 
     let gas = timed!(
         "Reading gas data from {}",
         gas_file,
-        (|| Measurements::from_file(Path::new(gas_file), "Gas".to_string(), "CCF".to_string())
-            .expect("Unable to read gas data"))
+        (|| {
+            let measurements =
+                Measurements::from_file(Path::new(gas_file), "Gas".to_string(), "CCF".to_string())
+                    .expect("Unable to read gas data");
+
+            info!(
+                "Read {} records covering {} days",
+                measurements.data.len(),
+                measurements
+                    .data
+                    .last()
+                    .unwrap()
+                    .date
+                    .signed_duration_since(measurements.data[0].date)
+                    .num_days()
+            );
+
+            measurements
+        })
     );
-    println!("{:?}", gas);
 
     info!("Drawing graph with smoothing days {}", smoothing_days);
 }
