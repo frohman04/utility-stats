@@ -5,6 +5,7 @@ extern crate log;
 extern crate simplelog;
 
 mod measurement;
+mod regression;
 #[macro_use]
 mod timed;
 
