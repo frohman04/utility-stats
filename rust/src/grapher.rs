@@ -1,8 +1,10 @@
 use crate::measurement::Measurement;
 use crate::measurement::Measurements;
 use crate::regression::SimpleRegression;
-use chrono::Date;
-use chrono::Utc;
+
+use chrono::prelude::*;
+
+use std::fs::write;
 
 /// Graph all measurements against smoothed temperatures over the same timeframe
 pub fn graph_all(electric_data: Measurements, gas_data: Measurements, loess_days: u8) -> () {
@@ -17,14 +19,104 @@ pub fn graph_all(electric_data: Measurements, gas_data: Measurements, loess_days
     measurement_dates.sort();
     measurement_dates.dedup();
 
-    let electric_plot_data = get_plot_data(electric_data.data);
-    let gas_plot_data = get_plot_data(gas_data.data);
-    println!("{:?}", electric_plot_data);
-    println!("{:?}", gas_plot_data);
+    let loess_max_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = (vec![], vec![]);
+    let loess_min_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = (vec![], vec![]);
+    let electric_plot_data = calc_measurement_series(electric_data.data);
+    let gas_plot_data = calc_measurement_series(gas_data.data);
+
+    let (loess_max_temp_dates, loess_max_temp_values) =
+        to_plot(loess_max_temp_plot_data.0, loess_max_temp_plot_data.1);
+    let (loess_min_temp_dates, loess_min_temp_values) =
+        to_plot(loess_min_temp_plot_data.0, loess_min_temp_plot_data.1);
+    let (electric_dates, electric_values) = to_plot(electric_plot_data.0, electric_plot_data.1);
+    let (gas_dates, gas_values) = to_plot(gas_plot_data.0, gas_plot_data.1);
+
+    let html = format!(
+        "<!DOCTYPE html>
+<html>
+    <head>
+        <title>All Utilities Usage per Day vs Average {}-day Smoothed Temperature</title>
+        <script src=\"https://cdn.plot.ly/plotly-1.41.3.min.js\"></script>
+    </head>
+    <body>
+        <div id=\"chart\"></div>
+        <script>
+            (function () {{
+                var data0 = {{
+                    \"name\": \"Max Temp (F)\",
+                    \"x\": [{}],
+                    \"y\": [{}],
+                    \"mode\": \"lines\",
+                    \"type\": \"scatter\",
+                    \"yaxis\": \"y\"
+                }};
+                var data1 = {{
+                    \"name\": \"Min Temp (F)\",
+                    \"x\": [{}],
+                    \"y\": [{}],
+                    \"mode\": \"lines\",
+                    \"type\": \"scatter\",
+                    \"yaxis\": \"y\"
+                }};
+                var data2 = {{
+                    \"name\": \"Electric (kWh/day)\",
+                    \"x\": [{}],
+                    \"y\": [{}],
+                    \"mode\": \"lines\",
+                    \"type\": \"scatter\",
+                    \"yaxis\": \"y2\"
+                }};
+                var data3 = {{
+                    \"name\": \"Gas (CCF/day)\",
+                    \"x\": [{}],
+                    \"y\": [{}],
+                    \"mode\": \"lines\",
+                    \"type\": \"scatter\",
+                    \"yaxis\": \"y3\"
+                }};
+
+                var data = [data0, data1, data2, data3];
+                var layout = {{
+                    \"title\": \"All Utilities Usage per Day vs Average {}-day Smoothed Temperature\",
+                    \"xaxis\": {{
+                        \"title\": \"Measurement Date\"
+                    }},
+                    \"yaxis\": {{
+                        \"title\": \"Avg Temp (F)\"
+                    }},
+                    \"yaxis2\": {{
+                        \"showgrid\": false,
+                        \"showticklabels\": false,
+                        \"overlaying\": \"y\"
+                    }},
+                    \"yaxis3\": {{
+                        \"showgrid\": false,
+                        \"showticklabels\": false,
+                        \"overlaying\": \"y\"
+                    }}
+                }};
+                Plotly.plot(\"chart\", data, layout);
+            }})();
+        </script>
+    </body>
+</html>",
+        loess_days,
+        loess_max_temp_dates,
+        loess_max_temp_values,
+        loess_min_temp_dates,
+        loess_min_temp_values,
+        electric_dates,
+        electric_values,
+        gas_dates,
+        gas_values,
+        loess_days
+    );
+
+    write("all-utilities.html", html).expect("Unable to write file");
 }
 
 /// Convert a series of measurements into points for a scatter plot
-fn get_plot_data(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>) {
+fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>) {
     let mut dates: Vec<Date<Utc>> = Vec::new();
     let mut amounts: Vec<f32> = Vec::new();
 
@@ -39,4 +131,21 @@ fn get_plot_data(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>) {
     }
 
     (dates, amounts)
+}
+
+/// Convert a data series into the format for putting into JS.
+fn to_plot(dates: Vec<Date<Utc>>, values: Vec<f32>) -> (String, String) {
+    let dates: Vec<String> = dates
+        .iter()
+        .map(|x| x.format("%Y-%m-%d").to_string())
+        .collect();
+    let values: Vec<String> = values.iter().map(|x| x.to_string()).collect();
+    (
+        if dates.len() > 0 {
+            format!("\"{}\"", dates.join("\",\""))
+        } else {
+            "".to_string()
+        },
+        values.join(","),
+    )
 }
