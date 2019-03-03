@@ -14,7 +14,7 @@ pub struct Measurements {
 }
 
 /// A single meter reading
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Measurement {
     /// The date of the meter reading
     pub date: Date<Utc>,
@@ -39,6 +39,7 @@ impl Measurements {
                 amount: value,
             })
         }
+        records.sort_by(|a, b| a.date.cmp(&b.date));
 
         Ok(Measurements {
             data: records,

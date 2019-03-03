@@ -4,11 +4,13 @@ extern crate csv;
 extern crate log;
 extern crate simplelog;
 
+mod grapher;
 mod measurement;
 mod regression;
 #[macro_use]
 mod timed;
 
+use grapher::graph_all;
 use measurement::Measurements;
 
 use clap::{App, Arg};
@@ -49,7 +51,7 @@ fn main() -> () {
     let smoothing_days = matches
         .value_of("smoothing_days")
         .unwrap()
-        .parse::<i32>()
+        .parse::<u8>()
         .unwrap();
 
     info!("Reading electric data from {}", electric_file);
@@ -104,5 +106,9 @@ fn main() -> () {
         })
     );
 
-    info!("Drawing graph with smoothing days {}", smoothing_days);
+    timed!(
+        "Drawing graph with smoothing days {}",
+        smoothing_days,
+        (|| graph_all(electric, gas, smoothing_days))
+    );
 }
