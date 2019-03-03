@@ -2,8 +2,11 @@ extern crate clap;
 extern crate csv;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate serde_derive;
 extern crate simplelog;
 
+mod darksky;
 mod grapher;
 mod measurement;
 mod regression;
