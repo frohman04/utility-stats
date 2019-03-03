@@ -3,6 +3,7 @@ use crate::measurement::Measurements;
 use crate::regression::SimpleRegression;
 
 use chrono::prelude::*;
+use time::Duration;
 
 use std::fs::write;
 
@@ -19,8 +20,21 @@ pub fn graph_all(electric_data: Measurements, gas_data: Measurements, loess_days
     measurement_dates.sort();
     measurement_dates.dedup();
 
-    let loess_max_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = (vec![], vec![]);
-    let loess_min_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = (vec![], vec![]);
+    // TODO: Use real temperature data
+    let loess_max_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = calc_temp_series(
+        vec![Measurement {
+            date: Utc.ymd(2019, 3, 3),
+            amount: 5,
+        }],
+        loess_days,
+    );
+    let loess_min_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = calc_temp_series(
+        vec![Measurement {
+            date: Utc.ymd(2019, 3, 3),
+            amount: 5,
+        }],
+        loess_days,
+    );
     let electric_plot_data = calc_measurement_series(electric_data.data);
     let gas_plot_data = calc_measurement_series(gas_data.data);
 
@@ -128,6 +142,44 @@ fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>)
 
         let days = curr.date.signed_duration_since(prev.date).num_days();
         amounts.push(curr.amount as f32 / days as f32);
+    }
+
+    (dates, amounts)
+}
+
+/// Convert a series of measurements into smoothed points for a scatter plot
+fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date<Utc>>, Vec<f32>) {
+    let base_date = data.iter().map(|r| r.date).min().unwrap();
+    let mut lower_init = 0;
+
+    let mut dates: Vec<Date<Utc>> = Vec::new();
+    let mut amounts: Vec<f32> = Vec::new();
+
+    for measurement in &data {
+        let lower_bound = measurement.date - Duration::days(num_days as i64 / 2);
+        let upper_bound = measurement.date + Duration::days((num_days as i64 - 1) / 2);
+
+        let mut regression = SimpleRegression::new();
+
+        let mut i = lower_init;
+        while lower_bound.signed_duration_since(data[i].date).num_days() > 0 {
+            i += 1;
+        }
+        lower_init = i;
+
+        while i < data.len() && data[i].date.signed_duration_since(upper_bound).num_days() <= 0 {
+            regression.add_data(
+                data[i].date.signed_duration_since(base_date).num_days() as f64,
+                data[i].amount as f64,
+            );
+            i += 1;
+        }
+
+        dates.push(measurement.date);
+        amounts.push(
+            regression.predict(measurement.date.signed_duration_since(base_date).num_days() as f64)
+                as f32,
+        );
     }
 
     (dates, amounts)
