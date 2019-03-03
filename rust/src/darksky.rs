@@ -1,3 +1,5 @@
+use chrono::prelude::*;
+
 /// API responses consist of a UTF-8-encoded, JSON-formatted object.
 #[derive(Debug, Serialize, Deserialize)]
 struct DarkSkyResponse {
@@ -47,7 +49,8 @@ struct DataPointCurrently {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
-    pub time: i64,
+    #[serde(alias = "time")]
+    pub timestamp: i64,
     /// A human-readable text summary of this data point. (This property has millions of possible
     /// values, so don’t use it for automated purposes: use the icon property, instead!)
     pub summary: Option<String>,
@@ -112,6 +115,15 @@ struct DataPointCurrently {
     pub ozone: Option<f32>,
 }
 
+impl DataPointCurrently {
+    /// The UNIX time at which this data point begins. minutely data point are always aligned to the
+    /// top of the minute, hourly data point objects to the top of the hour, and daily data point
+    /// objects to midnight of the day, all according to the local time zone.
+    pub fn time(&self) -> DateTime<Utc> {
+        Utc.timestamp(self.timestamp as i64, 0)
+    }
+}
+
 /// A data point object contains various properties, each representing the average (unless otherwise
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
@@ -120,7 +132,8 @@ struct DataPointMinutely {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
-    pub time: i64,
+    #[serde(alias = "time")]
+    pub timestamp: i64,
     /// A human-readable text summary of this data point. (This property has millions of possible
     /// values, so don’t use it for automated purposes: use the icon property, instead!)
     pub summary: Option<String>,
@@ -182,6 +195,15 @@ struct DataPointMinutely {
     pub ozone: Option<f32>,
 }
 
+impl DataPointMinutely {
+    /// The UNIX time at which this data point begins. minutely data point are always aligned to the
+    /// top of the minute, hourly data point objects to the top of the hour, and daily data point
+    /// objects to midnight of the day, all according to the local time zone.
+    pub fn time(&self) -> DateTime<Utc> {
+        Utc.timestamp(self.timestamp as i64, 0)
+    }
+}
+
 /// A data point object contains various properties, each representing the average (unless otherwise
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
@@ -190,7 +212,8 @@ struct DataPointHourly {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
-    pub time: i64,
+    #[serde(alias = "time")]
+    pub timestamp: i64,
     /// A human-readable text summary of this data point. (This property has millions of possible
     /// values, so don’t use it for automated purposes: use the icon property, instead!)
     pub summary: Option<String>,
@@ -261,6 +284,15 @@ struct DataPointHourly {
     pub ozone: Option<f32>,
 }
 
+impl DataPointHourly {
+    /// The UNIX time at which this data point begins. minutely data point are always aligned to the
+    /// top of the minute, hourly data point objects to the top of the hour, and daily data point
+    /// objects to midnight of the day, all according to the local time zone.
+    pub fn time(&self) -> DateTime<Utc> {
+        Utc.timestamp(self.timestamp as i64, 0)
+    }
+}
+
 /// A data point object contains various properties, each representing the average (unless otherwise
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
@@ -269,7 +301,8 @@ struct DataPointDaily {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
-    pub time: i64,
+    #[serde(alias = "time")]
+    pub timestamp: i64,
     /// A human-readable text summary of this data point. (This property has millions of possible
     /// values, so don’t use it for automated purposes: use the icon property, instead!)
     pub summary: Option<String>,
@@ -294,7 +327,7 @@ struct DataPointDaily {
     pub precip_intensity_max: Option<f32>,
     /// The UNIX time of when precipIntensityMax occurs during a given day. (only on daily)
     #[serde(alias = "precipIntensityMaxTime")]
-    pub precip_intensity_max_time: Option<u64>,
+    pub precip_intensity_max_timestamp: Option<u64>,
     /// The probability of precipitation occurring, between 0 and 1, inclusive.
     #[serde(alias = "precipProbability")]
     pub precip_probability: Option<f32>,
@@ -314,55 +347,55 @@ struct DataPointDaily {
     pub temperature_high: Option<f32>,
     /// The UNIX time representing when the daytime high temperature occurs. (only on daily)
     #[serde(alias = "temperatureHighTime")]
-    pub temperature_high_time: Option<u64>,
+    pub temperature_high_timestamp: Option<u64>,
     /// The overnight low temperature. (only on daily)
     #[serde(alias = "temperatureLow")]
     pub temperature_low: Option<f32>,
     /// The UNIX time representing when the overnight low temperature occurs. (only on daily)
     #[serde(alias = "temperatureLowTime")]
-    pub temperature_low_time: Option<f32>,
+    pub temperature_low_timestamp: Option<f32>,
     /// The maximum temperature during a given date. (only on daily)
     #[serde(alias = "temperatureMax")]
     pub temperature_max: Option<f32>,
     /// The UNIX time representing when the maximum temperature during a given date occurs. (only
     /// on daily)
     #[serde(alias = "temperatureMaxTime")]
-    pub temperature_max_time: Option<u64>,
+    pub temperature_max_timestamp: Option<u64>,
     /// The minimum temperature during a given date. (only on daily)
     #[serde(alias = "temperatureMin")]
     pub temperature_min: Option<f32>,
     /// The UNIX time representing when the minimum temperature during a given date occurs. (only
     /// on daily)
     #[serde(alias = "temperatureMinTime")]
-    pub temperature_min_time: Option<u64>,
+    pub temperature_min_timestamp: Option<u64>,
     /// The daytime high apparent temperature. (only on daily)
     #[serde(alias = "apparentTemperatureHigh")]
     pub apparent_temperature_high: Option<f32>,
     /// The UNIX time representing when the daytime high apparent temperature occurs.
     /// (only on daily)
     #[serde(alias = "apparentTemperatureHighTime")]
-    pub apparent_temperature_high_time: Option<i64>,
+    pub apparent_temperature_high_timestamp: Option<i64>,
     /// The overnight low apparent temperature. (only on daily)
     #[serde(alias = "apparentTemperatureLow")]
     pub apparent_temperature_low: Option<f32>,
     /// The UNIX time representing when the overnight low apparent temperature occurs.
     /// (only on daily)
     #[serde(alias = "apparentTemperatureLowTime")]
-    pub apparent_temperature_low_time: Option<u64>,
+    pub apparent_temperature_low_timestamp: Option<u64>,
     /// The maximum apparent temperature during a given date. (only on daily)
     #[serde(alias = "apparentTemperatureMax")]
     pub apparent_temperature_max: Option<f32>,
     /// The UNIX time representing when the maximum apparent temperature during a given date occurs.
     /// (only on daily)
     #[serde(alias = "apparentTemperatureMaxTime")]
-    pub apparent_temperature_max_time: Option<f32>,
+    pub apparent_temperature_max_timestamp: Option<f32>,
     /// The minimum apparent temperature during a given date. (only on daily)
     #[serde(alias = "apparentTemperatureMin")]
     pub apparent_temperature_min: Option<f32>,
     /// The UNIX time representing when the minimum apparent temperature during a given date occurs.
     /// (only on daily)
     #[serde(alias = "apparentTemperatureMinTime")]
-    pub apparent_temperature_min_time: Option<u64>,
+    pub apparent_temperature_min_timestamp: Option<u64>,
     /// The dew point in degrees Fahrenheit.
     #[serde(alias = "dewPoint")]
     pub dew_point: Option<f32>,
@@ -391,7 +424,7 @@ struct DataPointDaily {
     pub uv_index: Option<u8>,
     /// The UNIX time of when the maximum uvIndex occurs during a given day. (only on daily)
     #[serde(alias = "uvIndexTime")]
-    pub uv_index_time: Option<u64>,
+    pub uv_index_timestamp: Option<u64>,
     /// The average visibility in miles, capped at 10 miles.
     pub visibility: Option<f32>,
     /// The fractional part of the lunation number during the given day: a value of 0 corresponds
@@ -404,10 +437,92 @@ struct DataPointDaily {
     pub ozone: Option<f32>,
     /// The UNIX time of when the sun will rise during a given day. (only on daily)
     #[serde(alias = "sunriseTime")]
-    pub sunrise_time: Option<u64>,
+    pub sunrise_timestamp: Option<u64>,
     /// The UNIX time of when the sun will set during a given day. (only on daily)
     #[serde(alias = "sunsetTime")]
-    pub sunset_time: Option<u64>,
+    pub sunset_timestamp: Option<u64>,
+}
+
+impl DataPointDaily {
+    /// The UNIX time at which this data point begins. minutely data point are always aligned to the
+    /// top of the minute, hourly data point objects to the top of the hour, and daily data point
+    /// objects to midnight of the day, all according to the local time zone.
+    pub fn time(&self) -> DateTime<Utc> {
+        Utc.timestamp(self.timestamp as i64, 0)
+    }
+
+    /// The time of when precipIntensityMax occurs during a given day. (only on daily)
+    pub fn precip_intensity_max_time(&self) -> Option<DateTime<Utc>> {
+        self.precip_intensity_max_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the daytime high temperature occurs. (only on daily)
+    pub fn temperature_high_time(&self) -> Option<DateTime<Utc>> {
+        self.temperature_high_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the overnight low temperature occurs. (only on daily)
+    pub fn temperature_low_time(&self) -> Option<DateTime<Utc>> {
+        self.temperature_low_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the maximum temperature during a given date occurs. (only
+    /// on daily)
+    pub fn temperature_max_time(&self) -> Option<DateTime<Utc>> {
+        self.temperature_max_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the minimum temperature during a given date occurs. (only
+    /// on daily)
+    pub fn temperature_min_time(&self) -> Option<DateTime<Utc>> {
+        self.temperature_min_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the daytime high apparent temperature occurs. (only on daily)
+    pub fn apparent_temperature_high_time(&self) -> Option<DateTime<Utc>> {
+        self.apparent_temperature_high_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the overnight low apparent temperature occurs. (only on daily)
+    pub fn apparent_temperature_low_time(&self) -> Option<DateTime<Utc>> {
+        self.apparent_temperature_low_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the maximum apparent temperature during a given date occurs.
+    /// (only on daily)
+    pub fn apparent_temperature_max_time(&self) -> Option<DateTime<Utc>> {
+        self.apparent_temperature_max_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time representing when the minimum apparent temperature during a given date occurs.
+    /// (only on daily)
+    pub fn apparent_temperature_min_time(&self) -> Option<DateTime<Utc>> {
+        self.apparent_temperature_min_timestamp
+            .map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time of when the maximum uvIndex occurs during a given day. (only on daily)
+    pub fn uv_index_time(&self) -> Option<DateTime<Utc>> {
+        self.uv_index_timestamp.map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time of when the sun will rise during a given day. (only on daily)
+    pub fn sunrise_time(&self) -> Option<DateTime<Utc>> {
+        self.sunrise_timestamp.map(|x| Utc.timestamp(x as i64, 0))
+    }
+
+    /// The time of when the sun will set during a given day. (only on daily)
+    pub fn sunset_time(&self) -> Option<DateTime<Utc>> {
+        self.sunset_timestamp.map(|x| Utc.timestamp(x as i64, 0))
+    }
 }
 
 /// Object representing the severe weather warnings issued for the requested location by a
@@ -419,9 +534,11 @@ struct Alert {
     /// A detailed description of the alert.
     pub description: String,
     /// The UNIX time at which the alert was issued.
-    pub time: u64,
+    #[serde(alias = "time")]
+    pub timestamp: u64,
     /// The UNIX time at which the alert will expire.
-    pub expires: u64,
+    #[serde(alias = "expires")]
+    pub expires_timestamp: u64,
     /// An array of strings representing the names of the regions covered by this weather alert.
     pub regions: Vec<String>,
     /// The severity of the weather alert. Will take one of the following values: "advisory" (an
@@ -431,6 +548,18 @@ struct Alert {
     pub severity: String,
     /// An HTTP(S) URI that one may refer to for detailed information about the alert.
     pub uri: String,
+}
+
+impl Alert {
+    /// The time at which the alert was issued.
+    pub fn time(&self) -> DateTime<Utc> {
+        Utc.timestamp(self.timestamp as i64, 0)
+    }
+
+    /// The time at which the alert will expire.
+    pub fn expires(&self) -> DateTime<Utc> {
+        Utc.timestamp(self.expires_timestamp as i64, 0)
+    }
 }
 
 /// The flags object contains various metadata information related to the request.
