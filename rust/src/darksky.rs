@@ -1,4 +1,45 @@
 use chrono::prelude::*;
+use reqwest::{Client, ClientBuilder, StatusCode};
+
+pub struct DarkSkyClient {
+    api_key: String,
+    client: Client,
+}
+
+impl DarkSkyClient {
+    /// Construct a new client that uses the given API key
+    pub fn new(api_key: String) -> DarkSkyClient {
+        DarkSkyClient {
+            api_key,
+            client: ClientBuilder::new()
+                .use_default_tls()
+                .gzip(true)
+                .build()
+                .expect("Unable to construct HTTP client"),
+        }
+    }
+
+    /// Get the temperature history for a given day from DarkSky
+    pub fn get_history(self, date: Date<Utc>) -> DarkSkyResponse {
+        let url = format!(
+            "https://api.darksky.net/forecast/{}/42.5468,-71.2550102,{}T00:00:00",
+            self.api_key,
+            date.format("%Y-%m-%d")
+        );
+        let mut res = self
+            .client
+            .get(&url)
+            .send()
+            .expect("Encountered error calling DarkSky API");
+        match res.status() {
+            StatusCode::OK => {
+                let obj: DarkSkyResponse = res.json().expect("Unable to deserialize response");
+                obj
+            }
+            s => panic!("DarkSky API returned status {} for URL {}", s, url),
+        }
+    }
+}
 
 /// API responses consist of a UTF-8-encoded, JSON-formatted object.
 #[derive(Debug, Serialize, Deserialize)]

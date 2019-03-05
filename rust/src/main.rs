@@ -2,6 +2,7 @@ extern crate clap;
 extern crate csv;
 #[macro_use]
 extern crate log;
+extern crate reqwest;
 #[macro_use]
 extern crate serde_derive;
 extern crate simplelog;
@@ -13,9 +14,11 @@ mod regression;
 #[macro_use]
 mod timed;
 
+use darksky::DarkSkyClient;
 use grapher::graph_all;
 use measurement::Measurements;
 
+use chrono::prelude::*;
 use clap::{App, Arg};
 use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger};
 
@@ -56,6 +59,10 @@ fn main() -> () {
         .unwrap()
         .parse::<u8>()
         .unwrap();
+
+    let client = DarkSkyClient::new("9fff3709265bf41d21854d403ed7ee98".to_string());
+    let response = client.get_history(Utc.ymd(2019, 3, 1));
+    println!("{:?}", response);
 
     info!("Reading electric data from {}", electric_file);
     let electric = timed!(
