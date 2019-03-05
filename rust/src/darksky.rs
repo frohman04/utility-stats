@@ -2,7 +2,7 @@ use chrono::prelude::*;
 
 /// API responses consist of a UTF-8-encoded, JSON-formatted object.
 #[derive(Debug, Serialize, Deserialize)]
-struct DarkSkyResponse {
+pub struct DarkSkyResponse {
     /// The requested latitude.
     pub latitude: f32,
     /// The requested longitude.
@@ -30,7 +30,7 @@ struct DarkSkyResponse {
 
 /// A data block object represents the various weather phenomena occurring over a period of time.
 #[derive(Debug, Serialize, Deserialize)]
-struct DataBlock<DP> {
+pub struct DataBlock<DP> {
     /// An array of data points, ordered by time, which together describe the weather conditions at
     /// the requested location over time.
     pub data: Vec<DP>,
@@ -45,7 +45,7 @@ struct DataBlock<DP> {
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
 #[derive(Debug, Serialize, Deserialize)]
-struct DataPointCurrently {
+pub struct DataPointCurrently {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
@@ -128,7 +128,7 @@ impl DataPointCurrently {
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
 #[derive(Debug, Serialize, Deserialize)]
-struct DataPointMinutely {
+pub struct DataPointMinutely {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
@@ -208,7 +208,7 @@ impl DataPointMinutely {
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
 #[derive(Debug, Serialize, Deserialize)]
-struct DataPointHourly {
+pub struct DataPointHourly {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
@@ -297,7 +297,7 @@ impl DataPointHourly {
 /// specified) of a particular weather phenomenon occurring during a period of time: an instant in
 /// the case of currently, a minute for minutely, an hour for hourly, and a day for daily
 #[derive(Debug, Serialize, Deserialize)]
-struct DataPointDaily {
+pub struct DataPointDaily {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
@@ -528,7 +528,7 @@ impl DataPointDaily {
 /// Object representing the severe weather warnings issued for the requested location by a
 /// governmental authority (please see our data sources page for a list of sources).
 #[derive(Debug, Serialize, Deserialize)]
-struct Alert {
+pub struct Alert {
     /// A brief description of the alert.
     pub title: String,
     /// A detailed description of the alert.
@@ -564,7 +564,7 @@ impl Alert {
 
 /// The flags object contains various metadata information related to the request.
 #[derive(Debug, Serialize, Deserialize)]
-struct Flags {
+pub struct Flags {
     // not sure how this is represented in JSON or how Serde will handle it
     //    /// The presence of this property indicates that the Dark Sky data source supports the given
     //    /// location, but a temporary error (such as a radar station being down for maintenance) has
