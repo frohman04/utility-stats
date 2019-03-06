@@ -4,6 +4,7 @@ use reqwest::{Client, ClientBuilder, StatusCode};
 pub struct DarkSkyClient {
     api_key: String,
     client: Client,
+    request_count: u32,
 }
 
 impl DarkSkyClient {
@@ -16,11 +17,17 @@ impl DarkSkyClient {
                 .gzip(true)
                 .build()
                 .expect("Unable to construct HTTP client"),
+            request_count: 0,
         }
     }
 
     /// Get the temperature history for a given day from DarkSky
-    pub fn get_history(self, date: Date<Utc>) -> DarkSkyResponse {
+    pub fn get_history(&mut self, date: Date<Utc>) -> DarkSkyResponse {
+        self.request_count += 1;
+        if self.request_count >= 1000 {
+            panic!("Can only make 1000 requests per day");
+        }
+
         let url = format!(
             "https://api.darksky.net/forecast/{}/42.5468,-71.2550102,{}T00:00:00",
             self.api_key,

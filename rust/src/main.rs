@@ -61,7 +61,7 @@ fn main() -> () {
         .parse::<u8>()
         .unwrap();
 
-    let client = DarkSkyClient::new("9fff3709265bf41d21854d403ed7ee98".to_string());
+    let mut client = DarkSkyClient::new("9fff3709265bf41d21854d403ed7ee98".to_string());
     let response = client.get_history(Utc.ymd(2019, 3, 1));
     println!("{:?}", response);
 
