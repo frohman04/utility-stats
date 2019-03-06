@@ -1,5 +1,6 @@
 extern crate clap;
 extern crate csv;
+extern crate flate2;
 #[macro_use]
 extern crate log;
 extern crate reqwest;
