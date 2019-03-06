@@ -1,8 +1,10 @@
 use chrono::prelude::*;
 use reqwest::{Client, ClientBuilder, StatusCode};
+use rmp_serde::{Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
 
-use std::fs::DirBuilder;
-use std::path::Path;
+use std::fs::{read, write, DirBuilder};
+use std::path::{Path, PathBuf};
 
 pub struct DarkSkyClient {
     api_key: String,
@@ -36,6 +38,29 @@ impl DarkSkyClient {
 
     /// Get the temperature history for a given day from DarkSky
     pub fn get_history(&mut self, date: Date<Utc>) -> DarkSkyResponse {
+        let date_delta = date.signed_duration_since(Utc::today()).num_days();
+        if date_delta == 0 {
+            panic!("Cannot get history for today");
+        } else if date_delta > 0 {
+            panic!("Cannot get history for the future");
+        }
+
+        let mut cache_file = PathBuf::from(&self.cache_dir);
+        cache_file.push(format!("{}", date.format("%Y%m%d")));
+        cache_file.set_extension("mp");
+        let cache_file = cache_file.as_path();
+
+        if cache_file.exists() {
+            DarkSkyClient::read_file(cache_file)
+        } else {
+            let response = self.get_from_api(date);
+            DarkSkyClient::write_file(&response, cache_file);
+            response
+        }
+    }
+
+    /// Get the DarkSky historical data for a date straigt from the API
+    fn get_from_api(&mut self, date: Date<Utc>) -> DarkSkyResponse {
         self.request_count += 1;
         if self.request_count >= 1000 {
             panic!("Can only make 1000 requests per day");
@@ -58,6 +83,25 @@ impl DarkSkyClient {
             }
             s => panic!("DarkSky API returned status {} for URL {}", s, url),
         }
+    }
+
+    /// Read a DarkSkyResponse from a MessagePack file on disk
+    fn read_file(cache_file: &Path) -> DarkSkyResponse {
+        let data_vec = read(cache_file).expect(&format!("Unable to read file {:?}", cache_file));
+        let data = data_vec.as_slice();
+        let mut de = Deserializer::new(data);
+        let response: DarkSkyResponse = Deserialize::deserialize(&mut de)
+            .expect(&format!("Unable to deserialize data in {:?}", cache_file));
+        response
+    }
+
+    /// Write a response to a MessagePack file on disk
+    fn write_file(response: &DarkSkyResponse, cache_file: &Path) -> () {
+        let mut buf = Vec::new();
+        response
+            .serialize(&mut Serializer::new(&mut buf))
+            .expect(&format!("Unable to serialize data for {:?}", cache_file));
+        write(cache_file, buf).expect(&format!("Unable to write file {:?}", cache_file));
     }
 }
 
