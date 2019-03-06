@@ -1,9 +1,12 @@
 use chrono::prelude::*;
+use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::{Client, ClientBuilder, StatusCode};
 use rmp_serde::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
+use flate2::Compression;
 use std::fs::{read, write, DirBuilder};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub struct DarkSkyClient {
@@ -47,7 +50,7 @@ impl DarkSkyClient {
 
         let mut cache_file = PathBuf::from(&self.cache_dir);
         cache_file.push(format!("{}", date.format("%Y%m%d")));
-        cache_file.set_extension("mp");
+        cache_file.set_extension("mp.gz");
         let cache_file = cache_file.as_path();
 
         if cache_file.exists() {
@@ -87,21 +90,46 @@ impl DarkSkyClient {
 
     /// Read a DarkSkyResponse from a MessagePack file on disk
     fn read_file(cache_file: &Path) -> DarkSkyResponse {
-        let data_vec = read(cache_file).expect(&format!("Unable to read file {:?}", cache_file));
-        let data = data_vec.as_slice();
-        let mut de = Deserializer::new(data);
+        // read data to buffer
+        let raw = read(cache_file).expect(&format!("Unable to read file {:?}", cache_file));
+
+        // decompress
+        let mut decompressed = Vec::new();
+        let mut decoder = GzDecoder::new(decompressed);
+        decoder
+            .write_all(&raw[..])
+            .expect(&format!("Unable to decompress file {:?}", cache_file));
+        decompressed = decoder
+            .finish()
+            .expect(&format!("Unable to decompress file {:?}", cache_file));
+
+        // deserialize to object
+        let mut de = Deserializer::new(&decompressed[..]);
         let response: DarkSkyResponse = Deserialize::deserialize(&mut de)
             .expect(&format!("Unable to deserialize data in {:?}", cache_file));
+
         response
     }
 
     /// Write a response to a MessagePack file on disk
     fn write_file(response: &DarkSkyResponse, cache_file: &Path) -> () {
-        let mut buf = Vec::new();
+        // serialize to buffer
+        let mut obj_buf = Vec::new();
         response
-            .serialize(&mut Serializer::new(&mut buf))
+            .serialize(&mut Serializer::new(&mut obj_buf))
             .expect(&format!("Unable to serialize data for {:?}", cache_file));
-        write(cache_file, buf).expect(&format!("Unable to write file {:?}", cache_file));
+
+        // compress buffer
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
+        encoder
+            .write_all(&mut obj_buf)
+            .expect(&format!("Unable to compress data for {:?}", cache_file));
+        let compressed_buf = encoder
+            .finish()
+            .expect(&format!("Unable to compress data for {:?}", cache_file));
+
+        // write buffer to file
+        write(cache_file, compressed_buf).expect(&format!("Unable to write file {:?}", cache_file));
     }
 }
 
