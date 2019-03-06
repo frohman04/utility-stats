@@ -1,15 +1,27 @@
 use chrono::prelude::*;
 use reqwest::{Client, ClientBuilder, StatusCode};
 
+use std::fs::DirBuilder;
+use std::path::Path;
+
 pub struct DarkSkyClient {
     api_key: String,
     client: Client,
     request_count: u32,
+    cache_dir: String,
 }
 
 impl DarkSkyClient {
     /// Construct a new client that uses the given API key
-    pub fn new(api_key: String) -> DarkSkyClient {
+    pub fn new(api_key: String, cache_dir: String) -> DarkSkyClient {
+        let path = Path::new(&cache_dir);
+        if !path.exists() {
+            DirBuilder::new()
+                .recursive(true)
+                .create(path)
+                .expect(&format!("Unable to create directory {}", cache_dir));
+        }
+
         DarkSkyClient {
             api_key,
             client: ClientBuilder::new()
@@ -18,6 +30,7 @@ impl DarkSkyClient {
                 .build()
                 .expect("Unable to construct HTTP client"),
             request_count: 0,
+            cache_dir,
         }
     }
 

@@ -1,4 +1,5 @@
 target
 .idea
 wunderground_cache
+darksky_cache
 *.html
