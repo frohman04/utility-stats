@@ -180,6 +180,7 @@ impl DataPointCurrently {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
+    #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
         Utc.timestamp(self.timestamp as i64, 0)
     }
@@ -260,6 +261,7 @@ impl DataPointMinutely {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
+    #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
         Utc.timestamp(self.timestamp as i64, 0)
     }
@@ -349,6 +351,7 @@ impl DataPointHourly {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
+    #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
         Utc.timestamp(self.timestamp as i64, 0)
     }
@@ -508,23 +511,27 @@ impl DataPointDaily {
     /// The UNIX time at which this data point begins. minutely data point are always aligned to the
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
+    #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
         Utc.timestamp(self.timestamp as i64, 0)
     }
 
     /// The time of when precipIntensityMax occurs during a given day. (only on daily)
+    #[allow(dead_code)]
     pub fn precip_intensity_max_time(&self) -> Option<DateTime<Utc>> {
         self.precip_intensity_max_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time representing when the daytime high temperature occurs. (only on daily)
+    #[allow(dead_code)]
     pub fn temperature_high_time(&self) -> Option<DateTime<Utc>> {
         self.temperature_high_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time representing when the overnight low temperature occurs. (only on daily)
+    #[allow(dead_code)]
     pub fn temperature_low_time(&self) -> Option<DateTime<Utc>> {
         self.temperature_low_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
@@ -532,6 +539,7 @@ impl DataPointDaily {
 
     /// The time representing when the maximum temperature during a given date occurs. (only
     /// on daily)
+    #[allow(dead_code)]
     pub fn temperature_max_time(&self) -> Option<DateTime<Utc>> {
         self.temperature_max_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
@@ -539,18 +547,21 @@ impl DataPointDaily {
 
     /// The time representing when the minimum temperature during a given date occurs. (only
     /// on daily)
+    #[allow(dead_code)]
     pub fn temperature_min_time(&self) -> Option<DateTime<Utc>> {
         self.temperature_min_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time representing when the daytime high apparent temperature occurs. (only on daily)
+    #[allow(dead_code)]
     pub fn apparent_temperature_high_time(&self) -> Option<DateTime<Utc>> {
         self.apparent_temperature_high_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time representing when the overnight low apparent temperature occurs. (only on daily)
+    #[allow(dead_code)]
     pub fn apparent_temperature_low_time(&self) -> Option<DateTime<Utc>> {
         self.apparent_temperature_low_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
@@ -558,6 +569,7 @@ impl DataPointDaily {
 
     /// The time representing when the maximum apparent temperature during a given date occurs.
     /// (only on daily)
+    #[allow(dead_code)]
     pub fn apparent_temperature_max_time(&self) -> Option<DateTime<Utc>> {
         self.apparent_temperature_max_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
@@ -565,22 +577,26 @@ impl DataPointDaily {
 
     /// The time representing when the minimum apparent temperature during a given date occurs.
     /// (only on daily)
+    #[allow(dead_code)]
     pub fn apparent_temperature_min_time(&self) -> Option<DateTime<Utc>> {
         self.apparent_temperature_min_timestamp
             .map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time of when the maximum uvIndex occurs during a given day. (only on daily)
+    #[allow(dead_code)]
     pub fn uv_index_time(&self) -> Option<DateTime<Utc>> {
         self.uv_index_timestamp.map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time of when the sun will rise during a given day. (only on daily)
+    #[allow(dead_code)]
     pub fn sunrise_time(&self) -> Option<DateTime<Utc>> {
         self.sunrise_timestamp.map(|x| Utc.timestamp(x as i64, 0))
     }
 
     /// The time of when the sun will set during a given day. (only on daily)
+    #[allow(dead_code)]
     pub fn sunset_time(&self) -> Option<DateTime<Utc>> {
         self.sunset_timestamp.map(|x| Utc.timestamp(x as i64, 0))
     }
@@ -613,11 +629,13 @@ pub struct Alert {
 
 impl Alert {
     /// The time at which the alert was issued.
+    #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
         Utc.timestamp(self.timestamp as i64, 0)
     }
 
     /// The time at which the alert will expire.
+    #[allow(dead_code)]
     pub fn expires(&self) -> DateTime<Utc> {
         Utc.timestamp(self.expires_timestamp as i64, 0)
     }
