@@ -15,10 +15,12 @@ mod measurement;
 mod regression;
 #[macro_use]
 mod timed;
+mod tmpmgr;
 
 use darksky::DarkSkyClient;
 use grapher::graph_all;
 use measurement::Measurements;
+use tmpmgr::TempDataManager;
 
 use chrono::prelude::*;
 use clap::{App, Arg};
@@ -62,12 +64,12 @@ fn main() -> () {
         .parse::<u8>()
         .unwrap();
 
-    let mut client = DarkSkyClient::new(
+    let client = DarkSkyClient::new(
         "9fff3709265bf41d21854d403ed7ee98".to_string(),
         "darksky_cache".to_string(),
     );
-    let response = client.get_history(Utc.ymd(2019, 3, 1));
-    println!("{:?}", response);
+    let mut mgr = TempDataManager::new(client);
+    println!("{:?}", mgr.get_temp(Utc.ymd(2019, 3, 1)));
 
     info!("Reading electric data from {}", electric_file);
     let electric = timed!(
