@@ -69,7 +69,7 @@ fn main() -> () {
         "darksky_cache".to_string(),
     );
     let mut mgr = TempDataManager::new(client);
-    println!("{:?}", mgr.get_temp(Utc.ymd(2019, 3, 1)));
+    println!("{:?}", mgr.get_temp(&Utc.ymd(2019, 3, 1)));
 
     info!("Reading electric data from {}", electric_file);
     let electric = timed!(

@@ -40,7 +40,7 @@ impl DarkSkyClient {
     }
 
     /// Get the temperature history for a given day from DarkSky
-    pub fn get_history(&mut self, date: Date<Utc>) -> DarkSkyResponse {
+    pub fn get_history(&mut self, date: &Date<Utc>) -> DarkSkyResponse {
         let date_delta = date.signed_duration_since(Utc::today()).num_days();
         if date_delta == 0 {
             panic!("Cannot get history for today");
@@ -63,7 +63,7 @@ impl DarkSkyClient {
     }
 
     /// Get the DarkSky historical data for a date straigt from the API
-    fn get_from_api(&mut self, date: Date<Utc>) -> DarkSkyResponse {
+    fn get_from_api(&mut self, date: &Date<Utc>) -> DarkSkyResponse {
         self.request_count += 1;
         if self.request_count >= 1000 {
             panic!("Can only make 1000 requests per day");
