@@ -1,14 +1,21 @@
 use crate::measurement::Measurement;
 use crate::measurement::Measurements;
 use crate::regression::SimpleRegression;
+use crate::tmpmgr::TempDataManager;
 
 use chrono::prelude::*;
 use time::Duration;
 
+use crate::tmpmgr::Temp;
 use std::fs::write;
 
 /// Graph all measurements against smoothed temperatures over the same timeframe
-pub fn graph_all(electric_data: Measurements, gas_data: Measurements, loess_days: u8) -> () {
+pub fn graph_all(
+    electric_data: Measurements,
+    gas_data: Measurements,
+    mgr: &mut TempDataManager,
+    loess_days: u8,
+) -> () {
     let mut measurement_dates: Vec<Date<Utc>> = Vec::new();
 
     for record in &electric_data.data {
@@ -20,19 +27,23 @@ pub fn graph_all(electric_data: Measurements, gas_data: Measurements, loess_days
     measurement_dates.sort();
     measurement_dates.dedup();
 
-    // TODO: Use real temperature data
+    let daily_temp_data: Vec<(Date<Utc>, Temp)> =
+        TempDataManager::date_range(measurement_dates[0], *measurement_dates.last().unwrap())
+            .into_iter()
+            .filter_map(|date| mgr.get_temp(&date).clone().map(|temp| (date, temp)))
+            .collect();
     let loess_max_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = calc_temp_series(
-        vec![Measurement {
-            date: Utc.ymd(2019, 3, 3),
-            amount: 5,
-        }],
+        daily_temp_data
+            .iter()
+            .map(|(date, temp)| Measurement::new(*date, temp.max))
+            .collect(),
         loess_days,
     );
     let loess_min_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = calc_temp_series(
-        vec![Measurement {
-            date: Utc.ymd(2019, 3, 3),
-            amount: 5,
-        }],
+        daily_temp_data
+            .iter()
+            .map(|(date, temp)| Measurement::new(*date, temp.min))
+            .collect(),
         loess_days,
     );
     let electric_plot_data = calc_measurement_series(electric_data.data);

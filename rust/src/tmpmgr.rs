@@ -120,9 +120,9 @@ impl TempDataManager {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Temp {
-    min: f32,
-    mean: f32,
-    max: f32,
+    pub min: f32,
+    pub mean: f32,
+    pub max: f32,
 }

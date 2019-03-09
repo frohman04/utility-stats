@@ -22,6 +22,15 @@ pub struct Measurement {
     pub amount: u16,
 }
 
+impl Measurement {
+    pub fn new(date: Date<Utc>, amount: f32) -> Measurement {
+        Measurement {
+            date,
+            amount: amount as u16,
+        }
+    }
+}
+
 impl Measurements {
     /// Load a measurements object from a CSV file.
     pub fn from_file(path: &Path, typ: String, unit: String) -> Result<Measurements, ReadError> {
