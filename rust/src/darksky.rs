@@ -74,6 +74,7 @@ impl DarkSkyClient {
             self.api_key,
             date.format("%Y-%m-%d")
         );
+        info!("Calling DarkSky: {}", url);
         let mut res = self
             .client
             .get(&url)
