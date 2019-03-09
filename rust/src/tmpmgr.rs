@@ -40,24 +40,28 @@ impl TempDataManager {
 
     /// Get the average temperature over a range of days, using each day's minimum temperature in
     /// Farenheit as the data point to average.
+    #[allow(dead_code)]
     pub fn get_avg_min_temp(&mut self, from_date: Date<Utc>, to_date: Date<Utc>) -> f32 {
         self.get_avg_temp(from_date, to_date, &|x: &Temp| x.min)
     }
 
     /// Get the average temperature over a range of days, using each day's mean temperature in
     /// Farenheit as the data point to average.
+    #[allow(dead_code)]
     pub fn get_avg_mean_temp(&mut self, from_date: Date<Utc>, to_date: Date<Utc>) -> f32 {
         self.get_avg_temp(from_date, to_date, &|x: &Temp| x.mean)
     }
 
     /// Get the average temperature over a range of days, using each day's maximum temperature in
     /// Farenheit as the data point to average.
+    #[allow(dead_code)]
     pub fn get_avg_max_temp(&mut self, from_date: Date<Utc>, to_date: Date<Utc>) -> f32 {
         self.get_avg_temp(from_date, to_date, &|x: &Temp| x.max)
     }
 
     /// Get the average temperature over a range of days, using each day's temp as selected by
     /// selector as the data point to average.
+    #[allow(dead_code)]
     fn get_avg_temp(
         &mut self,
         from_date: Date<Utc>,
