@@ -61,7 +61,7 @@ pub fn graph_all(
 <html>
     <head>
         <title>All Utilities Usage per Day vs Average {}-day Smoothed Temperature</title>
-        <script src=\"https://cdn.plot.ly/plotly-1.41.3.min.js\"></script>
+        <script src=\"https://cdn.plot.ly/plotly-1.43.0.min.js\"></script>
     </head>
     <body>
         <div id=\"chart\"></div>
@@ -102,7 +102,9 @@ pub fn graph_all(
 
                 var data = [data0, data1, data2, data3];
                 var layout = {{
-                    \"title\": \"All Utilities Usage per Day vs Average {}-day Smoothed Temperature\",
+                    \"title\": {{
+                        \"title\": \"All Utilities Usage per Day vs Average {}-day Smoothed Temperature\"
+                    }},
                     \"xaxis\": {{
                         \"title\": \"Measurement Date\"
                     }},
