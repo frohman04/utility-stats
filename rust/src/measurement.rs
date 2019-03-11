@@ -14,20 +14,17 @@ pub struct Measurements {
 }
 
 /// A single meter reading
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct Measurement {
     /// The date of the meter reading
     pub date: Date<Utc>,
-    /// The amount of resouces used since the last meter reading
-    pub amount: u16,
+    /// The amount of resources used since the last meter reading
+    pub amount: f32,
 }
 
 impl Measurement {
     pub fn new(date: Date<Utc>, amount: f32) -> Measurement {
-        Measurement {
-            date,
-            amount: amount as u16,
-        }
+        Measurement { date, amount }
     }
 }
 
@@ -45,7 +42,7 @@ impl Measurements {
             let datetime = DateTime::parse_from_rfc3339(&format!("{}T00:00:00Z", date_str))?;
             records.push(Measurement {
                 date: Utc.ymd(datetime.year(), datetime.month(), datetime.day()),
-                amount: value,
+                amount: value as f32,
             })
         }
         records.sort_by(|a, b| a.date.cmp(&b.date));
