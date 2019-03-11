@@ -109,11 +109,15 @@ impl TempDataManager {
                     count += 1;
                 }
 
-                Some(Temp {
-                    min,
-                    mean: sum / count as f32,
-                    max,
-                })
+                if count > 0 {
+                    Some(Temp {
+                        min,
+                        mean: sum / count as f32,
+                        max,
+                    })
+                } else {
+                    None
+                }
             } else {
                 warn!("No temperature data present for {:?}", date);
                 None
