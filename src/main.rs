@@ -5,7 +5,6 @@ extern crate flate2;
 extern crate log;
 extern crate reqwest;
 extern crate rmp_serde;
-#[macro_use]
 extern crate serde_derive;
 extern crate simplelog;
 
