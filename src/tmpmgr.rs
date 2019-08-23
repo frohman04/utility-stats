@@ -66,7 +66,7 @@ impl TempDataManager {
         &mut self,
         from_date: Date<Utc>,
         to_date: Date<Utc>,
-        selector: &Fn(&Temp) -> f32,
+        selector: &dyn Fn(&Temp) -> f32,
     ) -> f32 {
         let temps: Vec<f32> = TempDataManager::date_range(from_date, to_date)
             .iter()
