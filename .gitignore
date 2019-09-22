@@ -1,6 +1,7 @@
 target
 .idea
 darksky_cache
+darksky_cache/db.sqlite
 *.html
 *.iml
 .vscode

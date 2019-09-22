@@ -2,6 +2,8 @@ use chrono::prelude::*;
 use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::{Client, ClientBuilder, StatusCode};
 use rmp_serde::{Deserializer, Serializer};
+use rusqlite::Connection;
+use rusqlite::NO_PARAMS;
 use serde::{Deserialize, Serialize};
 
 use flate2::Compression;
@@ -14,6 +16,7 @@ pub struct DarkSkyClient {
     client: Client,
     request_count: u32,
     cache_dir: String,
+    cache_db: Connection,
 }
 
 impl DarkSkyClient {
@@ -27,6 +30,22 @@ impl DarkSkyClient {
                 .unwrap_or_else(|_| panic!("Unable to create directory {}", cache_dir));
         }
 
+        let mut db_path = PathBuf::from(&cache_dir);
+        db_path.push("db");
+        db_path.set_extension("sqlite");
+        let db_path = db_path.as_path();
+        let cache_db = Connection::open(db_path)
+            .unwrap_or_else(|_| panic!("Unable to open database {}", db_path.display()));
+        cache_db
+            .execute(
+                "CREATE TABLE IF NOT EXISTS darksky_data (\
+                date TEXT NOT NULL PRIMARY KEY,
+                response BLOB NOT NULL
+            )",
+                NO_PARAMS,
+            )
+            .unwrap_or_else(|_| panic!("Unable to create table"));
+
         DarkSkyClient {
             api_key,
             client: ClientBuilder::new()
@@ -36,6 +55,7 @@ impl DarkSkyClient {
                 .expect("Unable to construct HTTP client"),
             request_count: 0,
             cache_dir,
+            cache_db,
         }
     }
 
