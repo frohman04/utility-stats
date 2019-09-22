@@ -1,50 +1,33 @@
+use base64::{decode, encode};
 use chrono::prelude::*;
 use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::{Client, ClientBuilder, StatusCode};
 use rmp_serde::{Deserializer, Serializer};
-use rusqlite::Connection;
 use rusqlite::NO_PARAMS;
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
 use flate2::Compression;
-use std::fs::{read, write, DirBuilder};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct DarkSkyClient {
     api_key: String,
     client: Client,
     request_count: u32,
-    cache_dir: String,
     cache_db: Connection,
 }
 
 impl DarkSkyClient {
     /// Construct a new client that uses the given API key
     pub fn new(api_key: String, cache_dir: String) -> DarkSkyClient {
-        let path = Path::new(&cache_dir);
-        if !path.exists() {
-            DirBuilder::new()
-                .recursive(true)
-                .create(path)
-                .unwrap_or_else(|_| panic!("Unable to create directory {}", cache_dir));
-        }
-
         let mut db_path = PathBuf::from(&cache_dir);
         db_path.push("db");
         db_path.set_extension("sqlite");
         let db_path = db_path.as_path();
         let cache_db = Connection::open(db_path)
-            .unwrap_or_else(|_| panic!("Unable to open database {}", db_path.display()));
-        cache_db
-            .execute(
-                "CREATE TABLE IF NOT EXISTS darksky_data (\
-                date TEXT NOT NULL PRIMARY KEY,
-                response BLOB NOT NULL
-            )",
-                NO_PARAMS,
-            )
-            .unwrap_or_else(|_| panic!("Unable to create table"));
+            .unwrap_or_else(|err| panic!("Unable to open database {:?}: {}", db_path, err));
+        DarkSkyClient::init_db(&cache_db);
 
         DarkSkyClient {
             api_key,
@@ -54,7 +37,6 @@ impl DarkSkyClient {
                 .build()
                 .expect("Unable to construct HTTP client"),
             request_count: 0,
-            cache_dir,
             cache_db,
         }
     }
@@ -69,16 +51,14 @@ impl DarkSkyClient {
             panic!("Cannot get history for the future");
         }
 
-        let mut cache_file = PathBuf::from(&self.cache_dir);
-        cache_file.push(format!("{}", date.format("%Y%m%d")));
-        cache_file.set_extension("mp.gz");
-        let cache_file = cache_file.as_path();
+        let date_key = format!("{}", date.format("%Y%m%d"));
+        let response = self.read_data(&date_key);
 
-        if cache_file.exists() {
-            DarkSkyClient::read_file(cache_file)
+        if response.is_some() {
+            response.unwrap()
         } else {
             let response = self.get_from_api(date);
-            DarkSkyClient::write_file(&response, cache_file);
+            self.write_data(&date_key, &response);
             response
         }
     }
@@ -111,50 +91,104 @@ impl DarkSkyClient {
         }
     }
 
-    /// Read a DarkSkyResponse from a MessagePack file on disk
-    fn read_file(cache_file: &Path) -> DarkSkyResponse {
-        // read data to buffer
-        let raw =
-            read(cache_file).unwrap_or_else(|_| panic!("Unable to read file {:?}", cache_file));
+    /// Initialize the DB used to cache DarkSkyResponse objects
+    fn init_db(cache_db: &Connection) {
+        cache_db
+            .execute(
+                "CREATE TABLE IF NOT EXISTS darksky_data (\
+                date TEXT NOT NULL PRIMARY KEY,
+                response TEXT NOT NULL
+            )",
+                NO_PARAMS,
+            )
+            .unwrap_or_else(|err| panic!("Unable to create table: {}", err));
+    }
 
+    /// Read a DarkSkyResponse from the database
+    fn read_data(&self, date_key: &String) -> Option<DarkSkyResponse> {
+        self.cache_db
+            .prepare("SELECT response FROM darksky_data WHERE date = ?1")
+            .unwrap_or_else(|err| {
+                panic!("Unable to determine if date {} in DB: {}", &date_key, err)
+            })
+            .query_map(params![&date_key], |row| {
+                Ok(row.get(0).unwrap_or_else(|err| {
+                    panic!(
+                        "Unable to read data from DB row for date {}: {}",
+                        &date_key, err
+                    )
+                }))
+            })
+            .unwrap_or_else(|err| {
+                panic!("Unable to determine if date {} in DB: {}", &date_key, err)
+            })
+            .next()
+            .map(|x| {
+                let response: String = x.unwrap_or_else(|err| {
+                    panic!("Unable to read data for date {}: {}", &date_key, err)
+                });
+                DarkSkyClient::read_blob(
+                    decode(&response).unwrap_or_else(|err| {
+                        panic!("Unable to base64 decode data from DB: {}", err)
+                    }),
+                )
+            })
+    }
+
+    /// Write a DarkSkyResponse to the database
+    fn write_data(&self, date_key: &String, response: &DarkSkyResponse) {
+        let encoded = DarkSkyClient::write_blob(&response);
+        self.cache_db
+            .execute(
+                "INSERT INTO darksky_data(date, response) VALUES (?1, ?2)",
+                params![&date_key, encode(&encoded)],
+            )
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Unable to write DarkSky data into cache for date {}: {}",
+                    &date_key, err
+                )
+            });
+    }
+
+    /// Read a DarkSkyResponse from a MessagePack binary blob
+    fn read_blob(raw: Vec<u8>) -> DarkSkyResponse {
         // decompress
         let mut decompressed = Vec::new();
         let mut decoder = GzDecoder::new(decompressed);
         decoder
             .write_all(&raw[..])
-            .unwrap_or_else(|_| panic!("Unable to decompress file {:?}", cache_file));
+            .unwrap_or_else(|err| panic!("Unable to decompress data: {}", err));
         decompressed = decoder
             .finish()
-            .unwrap_or_else(|_| panic!("Unable to decompress file {:?}", cache_file));
+            .unwrap_or_else(|err| panic!("Unable to decompress data: {}", err));
 
         // deserialize to object
         let mut de = Deserializer::new(&decompressed[..]);
         let response: DarkSkyResponse = Deserialize::deserialize(&mut de)
-            .unwrap_or_else(|_| panic!("Unable to deserialize data in {:?}", cache_file));
+            .unwrap_or_else(|err| panic!("Unable to deserialize data: {}", err));
 
         response
     }
 
-    /// Write a response to a MessagePack file on disk
-    fn write_file(response: &DarkSkyResponse, cache_file: &Path) {
+    /// Write a response to a MessagePack binary blob
+    fn write_blob(response: &DarkSkyResponse) -> Vec<u8> {
         // serialize to buffer
         let mut obj_buf = Vec::new();
         response
             .serialize(&mut Serializer::new(&mut obj_buf))
-            .unwrap_or_else(|_| panic!("Unable to serialize data for {:?}", cache_file));
+            .unwrap_or_else(|err| panic!("Unable to serialize data: {}", err));
 
         // compress buffer
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder
             .write_all(&obj_buf)
-            .unwrap_or_else(|_| panic!("Unable to compress data for {:?}", cache_file));
+            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err));
         let compressed_buf = encoder
             .finish()
-            .unwrap_or_else(|_| panic!("Unable to compress data for {:?}", cache_file));
+            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err));
 
-        // write buffer to file
-        write(cache_file, compressed_buf)
-            .unwrap_or_else(|_| panic!("Unable to write file {:?}", cache_file));
+        compressed_buf
     }
 }
 

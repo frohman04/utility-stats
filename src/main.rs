@@ -1,3 +1,4 @@
+extern crate base64;
 extern crate clap;
 extern crate csv;
 extern crate flate2;
