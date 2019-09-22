@@ -24,7 +24,7 @@ impl DarkSkyClient {
             DirBuilder::new()
                 .recursive(true)
                 .create(path)
-                .expect(&format!("Unable to create directory {}", cache_dir));
+                .unwrap_or_else(|_| panic!("Unable to create directory {}", cache_dir));
         }
 
         DarkSkyClient {
@@ -40,6 +40,7 @@ impl DarkSkyClient {
     }
 
     /// Get the temperature history for a given day from DarkSky
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn get_history(&mut self, date: &Date<Utc>) -> DarkSkyResponse {
         let date_delta = date.signed_duration_since(Utc::today()).num_days();
         if date_delta == 0 {
@@ -63,6 +64,7 @@ impl DarkSkyClient {
     }
 
     /// Get the DarkSky historical data for a date straigt from the API
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn get_from_api(&mut self, date: &Date<Utc>) -> DarkSkyResponse {
         self.request_count += 1;
         if self.request_count >= 1000 {
@@ -92,45 +94,47 @@ impl DarkSkyClient {
     /// Read a DarkSkyResponse from a MessagePack file on disk
     fn read_file(cache_file: &Path) -> DarkSkyResponse {
         // read data to buffer
-        let raw = read(cache_file).expect(&format!("Unable to read file {:?}", cache_file));
+        let raw =
+            read(cache_file).unwrap_or_else(|_| panic!("Unable to read file {:?}", cache_file));
 
         // decompress
         let mut decompressed = Vec::new();
         let mut decoder = GzDecoder::new(decompressed);
         decoder
             .write_all(&raw[..])
-            .expect(&format!("Unable to decompress file {:?}", cache_file));
+            .unwrap_or_else(|_| panic!("Unable to decompress file {:?}", cache_file));
         decompressed = decoder
             .finish()
-            .expect(&format!("Unable to decompress file {:?}", cache_file));
+            .unwrap_or_else(|_| panic!("Unable to decompress file {:?}", cache_file));
 
         // deserialize to object
         let mut de = Deserializer::new(&decompressed[..]);
         let response: DarkSkyResponse = Deserialize::deserialize(&mut de)
-            .expect(&format!("Unable to deserialize data in {:?}", cache_file));
+            .unwrap_or_else(|_| panic!("Unable to deserialize data in {:?}", cache_file));
 
         response
     }
 
     /// Write a response to a MessagePack file on disk
-    fn write_file(response: &DarkSkyResponse, cache_file: &Path) -> () {
+    fn write_file(response: &DarkSkyResponse, cache_file: &Path) {
         // serialize to buffer
         let mut obj_buf = Vec::new();
         response
             .serialize(&mut Serializer::new(&mut obj_buf))
-            .expect(&format!("Unable to serialize data for {:?}", cache_file));
+            .unwrap_or_else(|_| panic!("Unable to serialize data for {:?}", cache_file));
 
         // compress buffer
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder
-            .write_all(&mut obj_buf)
-            .expect(&format!("Unable to compress data for {:?}", cache_file));
+            .write_all(&obj_buf)
+            .unwrap_or_else(|_| panic!("Unable to compress data for {:?}", cache_file));
         let compressed_buf = encoder
             .finish()
-            .expect(&format!("Unable to compress data for {:?}", cache_file));
+            .unwrap_or_else(|_| panic!("Unable to compress data for {:?}", cache_file));
 
         // write buffer to file
-        write(cache_file, compressed_buf).expect(&format!("Unable to write file {:?}", cache_file));
+        write(cache_file, compressed_buf)
+            .unwrap_or_else(|_| panic!("Unable to write file {:?}", cache_file));
     }
 }
 
@@ -255,7 +259,7 @@ impl DataPointCurrently {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp as i64, 0)
+        Utc.timestamp(self.timestamp, 0)
     }
 }
 
@@ -336,7 +340,7 @@ impl DataPointMinutely {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp as i64, 0)
+        Utc.timestamp(self.timestamp, 0)
     }
 }
 
@@ -426,7 +430,7 @@ impl DataPointHourly {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp as i64, 0)
+        Utc.timestamp(self.timestamp, 0)
     }
 }
 
@@ -586,7 +590,7 @@ impl DataPointDaily {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp as i64, 0)
+        Utc.timestamp(self.timestamp, 0)
     }
 
     /// The time of when precipIntensityMax occurs during a given day. (only on daily)

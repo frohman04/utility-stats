@@ -81,6 +81,7 @@ impl TempDataManager {
 
     /// Fetch the temperature data for the given date.  This data can come from disk cache or direct
     /// from the DarkSky API.
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn fetch_data(&mut self, date: &Date<Utc>) -> Option<Temp> {
         let data = self.client.get_history(date);
 

@@ -42,7 +42,7 @@ impl Measurements {
             let datetime = DateTime::parse_from_rfc3339(&format!("{}T00:00:00Z", date_str))?;
             records.push(Measurement {
                 date: Utc.ymd(datetime.year(), datetime.month(), datetime.day()),
-                amount: value as f32,
+                amount: f32::from(value),
             })
         }
         records.sort_by(|a, b| a.date.cmp(&b.date));

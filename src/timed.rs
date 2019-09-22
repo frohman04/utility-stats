@@ -7,6 +7,7 @@ macro_rules! timed {
         let start_time = PreciseTime::now();
         info!("Start: {}", msg);
 
+        #[allow(clippy::redundant_closure_call)]
         let out = $closure();
 
         let end_time = PreciseTime::now();
@@ -21,6 +22,7 @@ macro_rules! timed {
         let start_time = PreciseTime::now();
         info!("Start: {}", msg);
 
+        #[allow(clippy::redundant_closure_call)]
         let out = $closure();
 
         let end_time = PreciseTime::now();

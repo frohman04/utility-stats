@@ -26,7 +26,7 @@ use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger};
 
 use std::path::Path;
 
-fn main() -> () {
+fn main() {
     CombinedLogger::init(vec![
         TermLogger::new(LevelFilter::Info, Config::default()).unwrap()
     ])

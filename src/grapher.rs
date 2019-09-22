@@ -15,7 +15,7 @@ pub fn graph_all(
     gas_data: Measurements,
     mgr: &mut TempDataManager,
     loess_days: u8,
-) -> () {
+) {
     let mut measurement_dates: Vec<Date<Utc>> = Vec::new();
 
     for record in &electric_data.data {
@@ -154,7 +154,7 @@ fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>)
         dates.push(curr.date);
 
         let days = curr.date.signed_duration_since(prev.date).num_days();
-        amounts.push(curr.amount as f32 / days as f32);
+        amounts.push(curr.amount / days as f32);
     }
 
     (dates, amounts)
@@ -169,9 +169,8 @@ fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date<Utc>>, Ve
     let mut amounts: Vec<f32> = Vec::new();
 
     for measurement in &data {
-        let lower_bound = measurement.date - Duration::days(num_days as i64 / 2);
-        let upper_bound = measurement.date + Duration::days((num_days as i64 - 1) / 2);
-
+        let lower_bound = measurement.date - Duration::days(i64::from(num_days) / 2);
+        let upper_bound = measurement.date + Duration::days((i64::from(num_days) - 1) / 2);
         let mut regression = SimpleRegression::new();
 
         let mut i = lower_init;
@@ -183,7 +182,7 @@ fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date<Utc>>, Ve
         while i < data.len() && data[i].date.signed_duration_since(upper_bound).num_days() <= 0 {
             regression.add_data(
                 data[i].date.signed_duration_since(base_date).num_days() as f64,
-                data[i].amount as f64,
+                f64::from(data[i].amount),
             );
             i += 1;
         }
@@ -206,7 +205,7 @@ fn to_plot(dates: Vec<Date<Utc>>, values: Vec<f32>) -> (String, String) {
         .collect();
     let values: Vec<String> = values.iter().map(|x| x.to_string()).collect();
     (
-        if dates.len() > 0 {
+        if !dates.is_empty() {
             format!("\"{}\"", dates.join("\",\""))
         } else {
             "".to_string()
