@@ -1,4 +1,3 @@
-use base64::{decode, encode};
 use chrono::prelude::*;
 use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::{Client, ClientBuilder, StatusCode};
@@ -94,9 +93,9 @@ impl DarkSkyClient {
     fn init_db(cache_db: &Connection) {
         cache_db
             .execute(
-                "CREATE TABLE IF NOT EXISTS darksky_data2 (\
+                "CREATE TABLE IF NOT EXISTS darksky_data3 (\
                 date INTEGER NOT NULL PRIMARY KEY,
-                response TEXT NOT NULL
+                response BLOB NOT NULL
             )",
                 NO_PARAMS,
             )
@@ -112,7 +111,7 @@ impl DarkSkyClient {
     /// Read a DarkSkyResponse from the database
     fn read_data(&self, date: &Date<Utc>) -> Option<DarkSkyResponse> {
         self.cache_db
-            .prepare("SELECT response FROM darksky_data2 WHERE date = ?1")
+            .prepare("SELECT response FROM darksky_data3 WHERE date = ?1")
             .unwrap_or_else(|err| panic!("Unable to determine if date {} in DB: {}", date, err))
             .query_map(params![DarkSkyClient::get_key(date)], |row| {
                 Ok(row.get(0).unwrap_or_else(|err| {
@@ -122,13 +121,9 @@ impl DarkSkyClient {
             .unwrap_or_else(|err| panic!("Unable to determine if date {} in DB: {}", date, err))
             .next()
             .map(|x| {
-                let response: String = x
+                let response: Vec<u8> = x
                     .unwrap_or_else(|err| panic!("Unable to read data for date {}: {}", date, err));
-                DarkSkyClient::read_blob(
-                    decode(&response).unwrap_or_else(|err| {
-                        panic!("Unable to base64 decode data from DB: {}", err)
-                    }),
-                )
+                DarkSkyClient::read_blob(response)
             })
     }
 
@@ -137,8 +132,8 @@ impl DarkSkyClient {
         let encoded = DarkSkyClient::write_blob(&response);
         self.cache_db
             .execute(
-                "INSERT INTO darksky_data2(date, response) VALUES (?1, ?2)",
-                params![DarkSkyClient::get_key(date), encode(&encoded)],
+                "INSERT INTO darksky_data3(date, response) VALUES (?1, ?2)",
+                params![DarkSkyClient::get_key(date), encoded],
             )
             .unwrap_or_else(|err| {
                 panic!(
