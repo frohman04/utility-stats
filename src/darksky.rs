@@ -17,6 +17,8 @@ pub struct DarkSkyClient {
     cache_db: Connection,
 }
 
+const TABLE_NAME: &str = "darksky_data";
+
 impl DarkSkyClient {
     /// Construct a new client that uses the given API key
     pub fn new(api_key: String, cache_dir: String) -> DarkSkyClient {
@@ -93,10 +95,13 @@ impl DarkSkyClient {
     fn init_db(cache_db: &Connection) {
         cache_db
             .execute(
-                "CREATE TABLE IF NOT EXISTS darksky_data3 (\
-                date INTEGER NOT NULL PRIMARY KEY,
-                response BLOB NOT NULL
-            )",
+                &format!(
+                    "CREATE TABLE IF NOT EXISTS {} (
+                        date INTEGER NOT NULL PRIMARY KEY,
+                        response BLOB NOT NULL
+                    )",
+                    TABLE_NAME
+                ),
                 NO_PARAMS,
             )
             .unwrap_or_else(|err| panic!("Unable to create table: {}", err));
@@ -111,7 +116,10 @@ impl DarkSkyClient {
     /// Read a DarkSkyResponse from the database
     fn read_data(&self, date: &Date<Utc>) -> Option<DarkSkyResponse> {
         self.cache_db
-            .prepare("SELECT response FROM darksky_data3 WHERE date = ?1")
+            .prepare(&format!(
+                "SELECT response FROM {} WHERE date = ?1",
+                TABLE_NAME
+            ))
             .unwrap_or_else(|err| panic!("Unable to determine if date {} in DB: {}", date, err))
             .query_map(params![DarkSkyClient::get_key(date)], |row| {
                 Ok(row.get(0).unwrap_or_else(|err| {
@@ -132,7 +140,7 @@ impl DarkSkyClient {
         let encoded = DarkSkyClient::write_blob(&response);
         self.cache_db
             .execute(
-                "INSERT INTO darksky_data3(date, response) VALUES (?1, ?2)",
+                &format!("INSERT INTO {}(date, response) VALUES (?1, ?2)", TABLE_NAME),
                 params![DarkSkyClient::get_key(date), encoded],
             )
             .unwrap_or_else(|err| {
