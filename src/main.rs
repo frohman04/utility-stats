@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 extern crate clap;
 extern crate csv;
 extern crate flate2;
