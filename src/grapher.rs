@@ -61,7 +61,7 @@ pub fn graph_all(
 <html>
     <head>
         <title>All Utilities Usage per Day vs Average {}-day Smoothed Temperature</title>
-        <script src=\"https://cdn.plot.ly/plotly-1.43.0.min.js\"></script>
+        <script src=\"https://cdn.plot.ly/plotly-1.54.1.min.js\"></script>
     </head>
     <body>
         <div id=\"chart\"></div>
