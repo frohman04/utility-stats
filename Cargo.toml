@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 chrono = "~0.4"
 clap = "~2.33"
-csv = "~1.0"
+csv = "~1.1"
 flate2 = "~1.0"
 log = "~0.4"
 reqwest = "~0.9"
