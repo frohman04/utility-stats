@@ -10,7 +10,7 @@ clap = "~2.33"
 csv = "~1.1"
 flate2 = "~1.0"
 log = "~0.4"
-reqwest = "~0.9"
+reqwest = "~0.10"
 rmp-serde = "~0.14"
 rusqlite = { version="~0.23", features=["bundled"] }
 serde = "~1.0"
