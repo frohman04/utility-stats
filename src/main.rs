@@ -25,14 +25,16 @@ use measurement::Measurements;
 use tmpmgr::TempDataManager;
 
 use clap::{App, Arg};
-use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger};
+use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 
 use std::path::Path;
 
 fn main() {
-    CombinedLogger::init(vec![
-        TermLogger::new(LevelFilter::Info, Config::default()).unwrap()
-    ])
+    CombinedLogger::init(vec![TermLogger::new(
+        LevelFilter::Info,
+        Config::default(),
+        TerminalMode::Stderr,
+    )])
     .unwrap();
 
     let matches = App::new("utility-stats")
