@@ -1,6 +1,7 @@
 use chrono::prelude::*;
 use flate2::write::{GzDecoder, GzEncoder};
-use reqwest::{Client, ClientBuilder, StatusCode};
+use reqwest::blocking::{Client, ClientBuilder};
+use reqwest::StatusCode;
 use rmp_serde::{Deserializer, Serializer};
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
@@ -33,7 +34,6 @@ impl DarkSkyClient {
         DarkSkyClient {
             api_key,
             client: ClientBuilder::new()
-                .use_default_tls()
                 .gzip(true)
                 .build()
                 .expect("Unable to construct HTTP client"),
@@ -77,7 +77,7 @@ impl DarkSkyClient {
             date.format("%Y-%m-%d")
         );
         info!("Calling DarkSky: {}", url);
-        let mut res = self
+        let res = self
             .client
             .get(&url)
             .send()

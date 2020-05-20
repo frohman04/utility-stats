@@ -8,6 +8,7 @@ extern crate log;
 extern crate reqwest;
 extern crate rmp_serde;
 extern crate rusqlite;
+#[macro_use]
 extern crate serde_derive;
 extern crate simplelog;
 
