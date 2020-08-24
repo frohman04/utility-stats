@@ -12,7 +12,7 @@ flate2 = "~1.0"
 log = "~0.4"
 reqwest = { version="~0.10", features=["blocking", "gzip", "json"] }
 rmp-serde = "~0.14"
-rusqlite = { version="~0.23", features=["bundled"] }
+rusqlite = { version="~0.24", features=["bundled"] }
 serde = "~1.0"
 serde_derive = "~1.0"
 serde_json = "~1.0"
