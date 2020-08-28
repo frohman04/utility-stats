@@ -3,8 +3,7 @@ use crate::measurement::Measurements;
 use crate::regression::SimpleRegression;
 use crate::tmpmgr::TempDataManager;
 
-use chrono::prelude::*;
-use time::Duration;
+use time::{Date, Duration};
 
 use crate::tmpmgr::Temp;
 use std::fs::write;
@@ -16,7 +15,7 @@ pub fn graph_all(
     mgr: &mut TempDataManager,
     loess_days: u8,
 ) {
-    let mut measurement_dates: Vec<Date<Utc>> = Vec::new();
+    let mut measurement_dates: Vec<Date> = Vec::new();
 
     for record in &electric_data.data {
         measurement_dates.push(record.date);
@@ -27,19 +26,19 @@ pub fn graph_all(
     measurement_dates.sort();
     measurement_dates.dedup();
 
-    let daily_temp_data: Vec<(Date<Utc>, Temp)> =
+    let daily_temp_data: Vec<(Date, Temp)> =
         TempDataManager::date_range(measurement_dates[0], *measurement_dates.last().unwrap())
             .into_iter()
             .filter_map(|date| mgr.get_temp(&date).clone().map(|temp| (date, temp)))
             .collect();
-    let loess_max_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = calc_temp_series(
+    let loess_max_temp_plot_data: (Vec<Date>, Vec<f32>) = calc_temp_series(
         daily_temp_data
             .iter()
             .map(|(date, temp)| Measurement::new(*date, temp.max))
             .collect(),
         loess_days,
     );
-    let loess_min_temp_plot_data: (Vec<Date<Utc>>, Vec<f32>) = calc_temp_series(
+    let loess_min_temp_plot_data: (Vec<Date>, Vec<f32>) = calc_temp_series(
         daily_temp_data
             .iter()
             .map(|(date, temp)| Measurement::new(*date, temp.min))
@@ -143,8 +142,8 @@ pub fn graph_all(
 }
 
 /// Convert a series of measurements into points for a scatter plot
-fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>) {
-    let mut dates: Vec<Date<Utc>> = Vec::new();
+fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date>, Vec<f32>) {
+    let mut dates: Vec<Date> = Vec::new();
     let mut amounts: Vec<f32> = Vec::new();
 
     for i in 1..data.len() {
@@ -153,7 +152,7 @@ fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>)
 
         dates.push(curr.date);
 
-        let days = curr.date.signed_duration_since(prev.date).num_days();
+        let days = (curr.date - prev.date).whole_days();
         amounts.push(curr.amount / days as f32);
     }
 
@@ -161,11 +160,11 @@ fn calc_measurement_series(data: Vec<Measurement>) -> (Vec<Date<Utc>>, Vec<f32>)
 }
 
 /// Convert a series of measurements into smoothed points for a scatter plot
-fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date<Utc>>, Vec<f32>) {
+fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date>, Vec<f32>) {
     let base_date = data.iter().map(|r| r.date).min().unwrap();
     let mut lower_init = 0;
 
-    let mut dates: Vec<Date<Utc>> = Vec::new();
+    let mut dates: Vec<Date> = Vec::new();
     let mut amounts: Vec<f32> = Vec::new();
 
     for measurement in &data {
@@ -174,31 +173,28 @@ fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date<Utc>>, Ve
         let mut regression = SimpleRegression::new();
 
         let mut i = lower_init;
-        while lower_bound.signed_duration_since(data[i].date).num_days() > 0 {
+        while (lower_bound - data[i].date).whole_days() > 0 {
             i += 1;
         }
         lower_init = i;
 
-        while i < data.len() && data[i].date.signed_duration_since(upper_bound).num_days() <= 0 {
+        while i < data.len() && (data[i].date - upper_bound).whole_days() <= 0 {
             regression.add_data(
-                data[i].date.signed_duration_since(base_date).num_days() as f64,
+                (data[i].date - base_date).whole_days() as f64,
                 f64::from(data[i].amount),
             );
             i += 1;
         }
 
         dates.push(measurement.date);
-        amounts.push(
-            regression.predict(measurement.date.signed_duration_since(base_date).num_days() as f64)
-                as f32,
-        );
+        amounts.push(regression.predict((measurement.date - base_date).whole_days() as f64) as f32);
     }
 
     (dates, amounts)
 }
 
 /// Convert a data series into the format for putting into JS.
-fn to_plot(dates: Vec<Date<Utc>>, values: Vec<f32>) -> (String, String) {
+fn to_plot(dates: Vec<Date>, values: Vec<f32>) -> (String, String) {
     let dates: Vec<String> = dates
         .iter()
         .map(|x| x.format("%Y-%m-%d").to_string())

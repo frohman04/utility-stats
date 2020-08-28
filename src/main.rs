@@ -11,6 +11,8 @@ extern crate rusqlite;
 #[macro_use]
 extern crate serde_derive;
 extern crate simplelog;
+#[macro_use]
+extern crate time;
 
 mod darksky;
 mod grapher;
@@ -89,13 +91,7 @@ fn main() {
             info!(
                 "Read {} records covering {} days",
                 measurements.data.len(),
-                measurements
-                    .data
-                    .last()
-                    .unwrap()
-                    .date
-                    .signed_duration_since(measurements.data[0].date)
-                    .num_days()
+                (measurements.data.last().unwrap().date - measurements.data[0].date).whole_days()
             );
 
             measurements
@@ -113,13 +109,7 @@ fn main() {
             info!(
                 "Read {} records covering {} days",
                 measurements.data.len(),
-                measurements
-                    .data
-                    .last()
-                    .unwrap()
-                    .date
-                    .signed_duration_since(measurements.data[0].date)
-                    .num_days()
+                (measurements.data.last().unwrap().date - measurements.data[0].date).whole_days()
             );
 
             measurements

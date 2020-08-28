@@ -1,4 +1,3 @@
-use chrono::prelude::*;
 use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::StatusCode;
@@ -6,6 +5,7 @@ use rmp_serde::{Deserializer, Serializer};
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
+use time::{Date, OffsetDateTime};
 
 use flate2::Compression;
 use std::io::Write;
@@ -44,8 +44,8 @@ impl DarkSkyClient {
 
     /// Get the temperature history for a given day from DarkSky
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn get_history(&mut self, date: &Date<Utc>) -> DarkSkyResponse {
-        let date_delta = date.signed_duration_since(Utc::today()).num_days();
+    pub fn get_history(&mut self, date: &Date) -> DarkSkyResponse {
+        let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
         if date_delta == 0 {
             panic!("Cannot get history for today");
         } else if date_delta > 0 {
@@ -65,7 +65,7 @@ impl DarkSkyClient {
 
     /// Get the DarkSky historical data for a date straigt from the API
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    fn get_from_api(&mut self, date: &Date<Utc>) -> DarkSkyResponse {
+    fn get_from_api(&mut self, date: &Date) -> DarkSkyResponse {
         self.request_count += 1;
         if self.request_count >= 1000 {
             panic!("Can only make 1000 requests per day");
@@ -108,13 +108,13 @@ impl DarkSkyClient {
     }
 
     /// Get the DB key for a given date
-    fn get_key(date: &Date<Utc>) -> i64 {
-        let epoch = Utc.ymd(1970, 1, 1);
-        date.signed_duration_since(epoch).num_days()
+    fn get_key(date: &Date) -> i64 {
+        let epoch = date!(1970 - 01 - 01);
+        (*date - epoch).whole_days()
     }
 
     /// Read a DarkSkyResponse from the database
-    fn read_data(&self, date: &Date<Utc>) -> Option<DarkSkyResponse> {
+    fn read_data(&self, date: &Date) -> Option<DarkSkyResponse> {
         self.cache_db
             .prepare(&format!(
                 "SELECT response FROM {} WHERE date = ?1",
@@ -136,7 +136,7 @@ impl DarkSkyClient {
     }
 
     /// Write a DarkSkyResponse to the database
-    fn write_data(&self, date: &Date<Utc>, response: &DarkSkyResponse) {
+    fn write_data(&self, date: &Date, response: &DarkSkyResponse) {
         let encoded = DarkSkyClient::write_blob(&response);
         self.cache_db
             .execute(
@@ -312,8 +312,8 @@ impl DataPointCurrently {
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp, 0)
+    pub fn time(&self) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(self.timestamp)
     }
 }
 
@@ -393,8 +393,8 @@ impl DataPointMinutely {
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp, 0)
+    pub fn time(&self) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(self.timestamp)
     }
 }
 
@@ -483,8 +483,8 @@ impl DataPointHourly {
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp, 0)
+    pub fn time(&self) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(self.timestamp)
     }
 }
 
@@ -643,93 +643,96 @@ impl DataPointDaily {
     /// top of the minute, hourly data point objects to the top of the hour, and daily data point
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp, 0)
+    pub fn time(&self) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(self.timestamp)
     }
 
     /// The time of when precipIntensityMax occurs during a given day. (only on daily)
     #[allow(dead_code)]
-    pub fn precip_intensity_max_time(&self) -> Option<DateTime<Utc>> {
+    pub fn precip_intensity_max_time(&self) -> Option<OffsetDateTime> {
         self.precip_intensity_max_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the daytime high temperature occurs. (only on daily)
     #[allow(dead_code)]
-    pub fn temperature_high_time(&self) -> Option<DateTime<Utc>> {
+    pub fn temperature_high_time(&self) -> Option<OffsetDateTime> {
         self.temperature_high_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the overnight low temperature occurs. (only on daily)
     #[allow(dead_code)]
-    pub fn temperature_low_time(&self) -> Option<DateTime<Utc>> {
+    pub fn temperature_low_time(&self) -> Option<OffsetDateTime> {
         self.temperature_low_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the maximum temperature during a given date occurs. (only
     /// on daily)
     #[allow(dead_code)]
-    pub fn temperature_max_time(&self) -> Option<DateTime<Utc>> {
+    pub fn temperature_max_time(&self) -> Option<OffsetDateTime> {
         self.temperature_max_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the minimum temperature during a given date occurs. (only
     /// on daily)
     #[allow(dead_code)]
-    pub fn temperature_min_time(&self) -> Option<DateTime<Utc>> {
+    pub fn temperature_min_time(&self) -> Option<OffsetDateTime> {
         self.temperature_min_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the daytime high apparent temperature occurs. (only on daily)
     #[allow(dead_code)]
-    pub fn apparent_temperature_high_time(&self) -> Option<DateTime<Utc>> {
+    pub fn apparent_temperature_high_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_high_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the overnight low apparent temperature occurs. (only on daily)
     #[allow(dead_code)]
-    pub fn apparent_temperature_low_time(&self) -> Option<DateTime<Utc>> {
+    pub fn apparent_temperature_low_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_low_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the maximum apparent temperature during a given date occurs.
     /// (only on daily)
     #[allow(dead_code)]
-    pub fn apparent_temperature_max_time(&self) -> Option<DateTime<Utc>> {
+    pub fn apparent_temperature_max_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_max_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time representing when the minimum apparent temperature during a given date occurs.
     /// (only on daily)
     #[allow(dead_code)]
-    pub fn apparent_temperature_min_time(&self) -> Option<DateTime<Utc>> {
+    pub fn apparent_temperature_min_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_min_timestamp
-            .map(|x| Utc.timestamp(x as i64, 0))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time of when the maximum uvIndex occurs during a given day. (only on daily)
     #[allow(dead_code)]
-    pub fn uv_index_time(&self) -> Option<DateTime<Utc>> {
-        self.uv_index_timestamp.map(|x| Utc.timestamp(x as i64, 0))
+    pub fn uv_index_time(&self) -> Option<OffsetDateTime> {
+        self.uv_index_timestamp
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time of when the sun will rise during a given day. (only on daily)
     #[allow(dead_code)]
-    pub fn sunrise_time(&self) -> Option<DateTime<Utc>> {
-        self.sunrise_timestamp.map(|x| Utc.timestamp(x as i64, 0))
+    pub fn sunrise_time(&self) -> Option<OffsetDateTime> {
+        self.sunrise_timestamp
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 
     /// The time of when the sun will set during a given day. (only on daily)
     #[allow(dead_code)]
-    pub fn sunset_time(&self) -> Option<DateTime<Utc>> {
-        self.sunset_timestamp.map(|x| Utc.timestamp(x as i64, 0))
+    pub fn sunset_time(&self) -> Option<OffsetDateTime> {
+        self.sunset_timestamp
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
     }
 }
 
@@ -761,14 +764,14 @@ pub struct Alert {
 impl Alert {
     /// The time at which the alert was issued.
     #[allow(dead_code)]
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.timestamp as i64, 0)
+    pub fn time(&self) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(self.timestamp as i64)
     }
 
     /// The time at which the alert will expire.
     #[allow(dead_code)]
-    pub fn expires(&self) -> DateTime<Utc> {
-        Utc.timestamp(self.expires_timestamp as i64, 0)
+    pub fn expires(&self) -> OffsetDateTime {
+        OffsetDateTime::from_unix_timestamp(self.expires_timestamp as i64)
     }
 }
 

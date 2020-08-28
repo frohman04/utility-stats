@@ -1,14 +1,13 @@
 use crate::darksky::DarkSkyClient;
 
-use chrono::prelude::*;
-use time::Duration;
+use time::{Date, Duration};
 
 use std::collections::HashMap;
 use std::f32;
 
 pub struct TempDataManager {
     client: DarkSkyClient,
-    cache: HashMap<Date<Utc>, Option<Temp>>,
+    cache: HashMap<Date, Option<Temp>>,
 }
 
 impl TempDataManager {
@@ -21,16 +20,16 @@ impl TempDataManager {
     }
 
     /// Generate a range of dates [inclusive start, exclusive end)
-    pub fn date_range(start_date: Date<Utc>, end_date: Date<Utc>) -> Vec<Date<Utc>> {
-        let mut dates: Vec<Date<Utc>> = Vec::new();
-        for i in 0..end_date.signed_duration_since(start_date).num_days() {
-            dates.push(start_date.checked_add_signed(Duration::days(i)).unwrap());
+    pub fn date_range(start_date: Date, end_date: Date) -> Vec<Date> {
+        let mut dates: Vec<Date> = Vec::new();
+        for i in 0..(end_date - start_date).whole_days() {
+            dates.push(start_date + Duration::days(i));
         }
         dates
     }
 
     /// Get the temperature for the provided date
-    pub fn get_temp(&mut self, date: &Date<Utc>) -> &Option<Temp> {
+    pub fn get_temp(&mut self, date: &Date) -> &Option<Temp> {
         if !self.cache.contains_key(date) {
             let temp = self.fetch_data(date);
             self.cache.insert(*date, temp);
@@ -41,21 +40,21 @@ impl TempDataManager {
     /// Get the average temperature over a range of days, using each day's minimum temperature in
     /// Farenheit as the data point to average.
     #[allow(dead_code)]
-    pub fn get_avg_min_temp(&mut self, from_date: Date<Utc>, to_date: Date<Utc>) -> f32 {
+    pub fn get_avg_min_temp(&mut self, from_date: Date, to_date: Date) -> f32 {
         self.get_avg_temp(from_date, to_date, &|x: &Temp| x.min)
     }
 
     /// Get the average temperature over a range of days, using each day's mean temperature in
     /// Farenheit as the data point to average.
     #[allow(dead_code)]
-    pub fn get_avg_mean_temp(&mut self, from_date: Date<Utc>, to_date: Date<Utc>) -> f32 {
+    pub fn get_avg_mean_temp(&mut self, from_date: Date, to_date: Date) -> f32 {
         self.get_avg_temp(from_date, to_date, &|x: &Temp| x.mean)
     }
 
     /// Get the average temperature over a range of days, using each day's maximum temperature in
     /// Farenheit as the data point to average.
     #[allow(dead_code)]
-    pub fn get_avg_max_temp(&mut self, from_date: Date<Utc>, to_date: Date<Utc>) -> f32 {
+    pub fn get_avg_max_temp(&mut self, from_date: Date, to_date: Date) -> f32 {
         self.get_avg_temp(from_date, to_date, &|x: &Temp| x.max)
     }
 
@@ -64,8 +63,8 @@ impl TempDataManager {
     #[allow(dead_code)]
     fn get_avg_temp(
         &mut self,
-        from_date: Date<Utc>,
-        to_date: Date<Utc>,
+        from_date: Date,
+        to_date: Date,
         selector: &dyn Fn(&Temp) -> f32,
     ) -> f32 {
         let temps: Vec<f32> = TempDataManager::date_range(from_date, to_date)
@@ -82,7 +81,7 @@ impl TempDataManager {
     /// Fetch the temperature data for the given date.  This data can come from disk cache or direct
     /// from the DarkSky API.
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    fn fetch_data(&mut self, date: &Date<Utc>) -> Option<Temp> {
+    fn fetch_data(&mut self, date: &Date) -> Option<Temp> {
         let data = self.client.get_history(date);
 
         if data.hourly.is_some() {

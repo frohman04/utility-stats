@@ -1,4 +1,4 @@
-use chrono::prelude::*;
+use time::Date;
 
 use std::path::Path;
 
@@ -17,13 +17,13 @@ pub struct Measurements {
 #[derive(Debug)]
 pub struct Measurement {
     /// The date of the meter reading
-    pub date: Date<Utc>,
+    pub date: Date,
     /// The amount of resources used since the last meter reading
     pub amount: f32,
 }
 
 impl Measurement {
-    pub fn new(date: Date<Utc>, amount: f32) -> Measurement {
+    pub fn new(date: Date, amount: f32) -> Measurement {
         Measurement { date, amount }
     }
 }
@@ -39,9 +39,9 @@ impl Measurements {
         let mut records: Vec<Measurement> = Vec::new();
         for result in reader.deserialize() {
             let (date_str, value): (String, u16) = result?;
-            let datetime = DateTime::parse_from_rfc3339(&format!("{}T00:00:00Z", date_str))?;
+            let date = Date::parse(date_str, "%F")?;
             records.push(Measurement {
-                date: Utc.ymd(datetime.year(), datetime.month(), datetime.day()),
+                date,
                 amount: f32::from(value),
             })
         }
@@ -58,7 +58,7 @@ impl Measurements {
 #[derive(Debug)]
 pub enum ReadError {
     CsvError { err: csv::Error },
-    DateParseError { err: chrono::format::ParseError },
+    DateParseError { err: time::ParseError },
 }
 
 impl From<csv::Error> for ReadError {
@@ -67,8 +67,8 @@ impl From<csv::Error> for ReadError {
     }
 }
 
-impl From<chrono::format::ParseError> for ReadError {
-    fn from(err: chrono::format::ParseError) -> Self {
+impl From<time::ParseError> for ReadError {
+    fn from(err: time::ParseError) -> Self {
         ReadError::DateParseError { err }
     }
 }
