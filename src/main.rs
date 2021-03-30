@@ -27,7 +27,7 @@ use measurement::Measurements;
 use tmpmgr::TempDataManager;
 
 use clap::{App, Arg};
-use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
+use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 
 use std::path::Path;
 
@@ -36,6 +36,7 @@ fn main() {
         LevelFilter::Info,
         Config::default(),
         TerminalMode::Stderr,
+        ColorChoice::Auto,
     )])
     .unwrap();
 
