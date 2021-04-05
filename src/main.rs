@@ -7,6 +7,7 @@ extern crate flate2;
 extern crate log;
 extern crate reqwest;
 extern crate rmp_serde;
+#[macro_use]
 extern crate rusqlite;
 extern crate serde;
 extern crate simplelog;

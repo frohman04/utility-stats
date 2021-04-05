@@ -2,8 +2,7 @@ use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::StatusCode;
 use rmp_serde::{Deserializer, Serializer};
-use rusqlite::NO_PARAMS;
-use rusqlite::{params, Connection};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use time::{Date, OffsetDateTime};
 
@@ -102,7 +101,7 @@ impl DarkSkyClient {
                     )",
                     TABLE_NAME
                 ),
-                NO_PARAMS,
+                [],
             )
             .unwrap_or_else(|err| panic!("Unable to create table: {}", err));
     }
