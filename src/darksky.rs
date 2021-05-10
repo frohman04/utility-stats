@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use time::{Date, OffsetDateTime};
 
 use flate2::Compression;
+use std::cmp::Ordering;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -45,20 +46,20 @@ impl DarkSkyClient {
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn get_history(&mut self, date: &Date) -> DarkSkyResponse {
         let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
-        if date_delta == 0 {
-            panic!("Cannot get history for today");
-        } else if date_delta > 0 {
-            panic!("Cannot get history for the future");
-        }
+        match date_delta.cmp(&0) {
+            Ordering::Equal => panic!("Cannot get history for today"),
+            Ordering::Greater => panic!("Cannot get history for the future"),
+            Ordering::Less => {
+                let response = self.read_data(date);
 
-        let response = self.read_data(date);
-
-        if response.is_some() {
-            response.unwrap()
-        } else {
-            let response = self.get_from_api(date);
-            self.write_data(date, &response);
-            response
+                if let Some(resp) = response {
+                    resp
+                } else {
+                    let response = self.get_from_api(date);
+                    self.write_data(date, &response);
+                    response
+                }
+            }
         }
     }
 
@@ -183,11 +184,9 @@ impl DarkSkyClient {
         encoder
             .write_all(&obj_buf)
             .unwrap_or_else(|err| panic!("Unable to compress data: {}", err));
-        let compressed_buf = encoder
+        encoder
             .finish()
-            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err));
-
-        compressed_buf
+            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err))
     }
 }
 

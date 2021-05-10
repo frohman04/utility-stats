@@ -7,6 +7,7 @@ macro_rules! timed {
         let start_time = OffsetDateTime::now_utc();
         info!("Start: {}", msg);
 
+        #[allow(clippy::redundant_closure_call)]
         let out = $closure();
 
         let end_time = OffsetDateTime::now_utc();
@@ -22,6 +23,7 @@ macro_rules! timed {
         let start_time = OffsetDateTime::now_utc();
         info!("Start: {}", msg);
 
+        #[allow(clippy::redundant_closure_call)]
         let out = $closure();
 
         let end_time = OffsetDateTime::now_utc();

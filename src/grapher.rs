@@ -195,10 +195,7 @@ fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date>, Vec<f32
 
 /// Convert a data series into the format for putting into JS.
 fn to_plot(dates: Vec<Date>, values: Vec<f32>) -> (String, String) {
-    let dates: Vec<String> = dates
-        .iter()
-        .map(|x| x.format("%Y-%m-%d").to_string())
-        .collect();
+    let dates: Vec<String> = dates.iter().map(|x| x.format("%Y-%m-%d")).collect();
     let values: Vec<String> = values.iter().map(|x| x.to_string()).collect();
     (
         if !dates.is_empty() {
