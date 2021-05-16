@@ -1,4 +1,7 @@
+use crate::weatherclient::{Temp, WeatherClient};
+
 use flate2::write::{GzDecoder, GzEncoder};
+use flate2::Compression;
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::StatusCode;
 use rmp_serde::{Deserializer, Serializer};
@@ -6,7 +9,6 @@ use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use time::{Date, OffsetDateTime};
 
-use flate2::Compression;
 use std::cmp::Ordering;
 use std::io::Write;
 use std::path::PathBuf;
@@ -39,27 +41,6 @@ impl DarkSkyClient {
                 .expect("Unable to construct HTTP client"),
             request_count: 0,
             cache_db,
-        }
-    }
-
-    /// Get the temperature history for a given day from DarkSky
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn get_history(&mut self, date: &Date) -> DarkSkyResponse {
-        let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
-        match date_delta.cmp(&0) {
-            Ordering::Equal => panic!("Cannot get history for today"),
-            Ordering::Greater => panic!("Cannot get history for the future"),
-            Ordering::Less => {
-                let response = self.read_data(date);
-
-                if let Some(resp) = response {
-                    resp
-                } else {
-                    let response = self.get_from_api(date);
-                    self.write_data(date, &response);
-                    response
-                }
-            }
         }
     }
 
@@ -187,6 +168,71 @@ impl DarkSkyClient {
         encoder
             .finish()
             .unwrap_or_else(|err| panic!("Unable to compress data: {}", err))
+    }
+}
+
+impl WeatherClient for DarkSkyClient {
+    /// Get the temperature history for a given day from DarkSky
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    fn get_history(&mut self, date: &Date) -> Option<Temp> {
+        let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
+        let data = match date_delta.cmp(&0) {
+            Ordering::Equal => panic!("Cannot get history for today"),
+            Ordering::Greater => panic!("Cannot get history for the future"),
+            Ordering::Less => {
+                let response = self.read_data(date);
+
+                if let Some(resp) = response {
+                    resp
+                } else {
+                    let response = self.get_from_api(date);
+                    self.write_data(date, &response);
+                    response
+                }
+            }
+        };
+
+        if data.hourly.is_some() {
+            let temps: Vec<f32> = data
+                .hourly
+                .unwrap()
+                .data
+                .into_iter()
+                .filter_map(|dp| dp.temperature)
+                .collect();
+            if !temps.is_empty() {
+                let mut min = f32::MAX;
+                let mut max = f32::MIN;
+                let mut sum = 0 as f32;
+                let mut count = 0;
+
+                for temp in temps {
+                    if temp < min {
+                        min = temp;
+                    }
+                    if temp > max {
+                        max = temp;
+                    }
+                    sum += temp;
+                    count += 1;
+                }
+
+                if count > 0 {
+                    Some(Temp {
+                        min,
+                        mean: sum / count as f32,
+                        max,
+                    })
+                } else {
+                    None
+                }
+            } else {
+                warn!("No temperature data present for {:?}", date);
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 

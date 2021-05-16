@@ -1,4 +1,7 @@
+use crate::weatherclient::{Temp, WeatherClient};
+
 use flate2::write::{GzDecoder, GzEncoder};
+use flate2::Compression;
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::StatusCode;
 use rmp_serde::{Deserializer, Serializer};
@@ -6,7 +9,6 @@ use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use time::{Date, Duration, OffsetDateTime};
 
-use flate2::Compression;
 use std::cmp::Ordering;
 use std::io::Write;
 use std::path::PathBuf;
@@ -59,42 +61,21 @@ impl NwsClient {
             .unwrap_or_else(|err| panic!("Unable to create table: {}", err));
     }
 
-    /// Get the temperature history for a given day from NWS
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn get_history(&mut self, date: &Date) -> NwsResponse {
-        let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
-        let station = self.stations.first().unwrap().clone();
-        match date_delta.cmp(&0) {
-            Ordering::Equal => panic!("Cannot get history for today"),
-            Ordering::Greater => panic!("Cannot get history for the future"),
-            Ordering::Less => {
-                let response = self.read_data(date, &station);
-
-                if let Some(resp) = response {
-                    resp
-                } else {
-                    let response = self.get_from_api(date, &station);
-                    self.write_data(date, &station, &response);
-                    response
-                }
-            }
-        }
-    }
-
     /// Get the NWS historical data for a date straight from the API
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    fn get_from_api(&mut self, date: &Date, station: &String) -> NwsResponse {
+    fn get_from_api(&mut self, date: &Date, station: &str) -> NwsResponse {
         let url = format!(
             "https://api.weather.gov/stations/{}/observations?start={}T00:00:00Z&end={}T00:00:00Z",
             station,
-            date.format("%Y-%m-%d"),
-            (*date - Duration::days(1)).format("%Y-%m-%d")
+            (*date - Duration::days(1)).format("%Y-%m-%d"),
+            date.format("%Y-%m-%d")
         );
         info!("Calling NWS: {}", url);
         let res = self
             .client
             .get(&url)
             .header("Accept", "application/geo+json")
+            .header("User-Agent", "utility-stats:rust:reqwest")
             .send()
             .expect("Encountered error calling NWS API");
         match res.status() {
@@ -113,7 +94,7 @@ impl NwsClient {
     }
 
     /// Read a NwsResponse from the database
-    fn read_data(&self, date: &Date, station: &String) -> Option<NwsResponse> {
+    fn read_data(&self, date: &Date, station: &str) -> Option<NwsResponse> {
         self.cache_db
             .prepare(&format!(
                 "SELECT response FROM {} WHERE date = ?1 AND station = ?2",
@@ -145,7 +126,7 @@ impl NwsClient {
     }
 
     /// Write a NwsResponse to the database
-    fn write_data(&self, date: &Date, station: &String, response: &NwsResponse) {
+    fn write_data(&self, date: &Date, station: &str, response: &NwsResponse) {
         let encoded = NwsClient::write_blob(&response);
         self.cache_db
             .execute(
@@ -199,6 +180,30 @@ impl NwsClient {
         encoder
             .finish()
             .unwrap_or_else(|err| panic!("Unable to compress data: {}", err))
+    }
+}
+
+impl WeatherClient for NwsClient {
+    fn get_history(&mut self, date: &Date) -> Option<Temp> {
+        let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
+        let station = self.stations.first().unwrap().clone();
+        let _data = match date_delta.cmp(&0) {
+            Ordering::Equal => panic!("Cannot get history for today"),
+            Ordering::Greater => panic!("Cannot get history for the future"),
+            Ordering::Less => {
+                let response = self.read_data(date, &station);
+
+                if let Some(resp) = response {
+                    resp
+                } else {
+                    let response = self.get_from_api(date, &station);
+                    self.write_data(date, &station, &response);
+                    response
+                }
+            }
+        };
+
+        todo!()
     }
 }
 

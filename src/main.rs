@@ -22,11 +22,14 @@ mod regression;
 #[macro_use]
 mod timed;
 mod tmpmgr;
+mod weatherclient;
 
-use darksky::DarkSkyClient;
-use grapher::graph_all;
-use measurement::Measurements;
-use tmpmgr::TempDataManager;
+use crate::darksky::DarkSkyClient;
+use crate::grapher::graph_all;
+use crate::measurement::Measurements;
+use crate::nws::NwsClient;
+use crate::tmpmgr::TempDataManager;
+use crate::weatherclient::WeatherClient;
 
 use clap::{App, Arg};
 use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
@@ -63,19 +66,35 @@ fn main() {
                 .long("gas_file")
                 .default_value("gas.csv"),
         )
+        .arg(
+            Arg::with_name("nws")
+                .short("n")
+                .long("nws")
+                .takes_value(false)
+                .help("Use NWS for input instead of DarkSky"),
+        )
         .get_matches();
     let electric_file = matches.value_of("electric_file").unwrap();
     let gas_file = matches.value_of("gas_file").unwrap();
+    let use_nws = matches.is_present("nws");
     let smoothing_days = matches
         .value_of("smoothing_days")
         .unwrap()
         .parse::<u8>()
         .unwrap();
 
-    let client = DarkSkyClient::new(
-        "9fff3709265bf41d21854d403ed7ee98".to_string(),
-        "darksky_cache".to_string(),
-    );
+    let client: Box<dyn WeatherClient> = if use_nws {
+        Box::new(NwsClient::new(
+            (42.5468, -71.2550102),
+            vec!["KBED".to_string()],
+            "nws_cache".to_string(),
+        ))
+    } else {
+        Box::new(DarkSkyClient::new(
+            "9fff3709265bf41d21854d403ed7ee98".to_string(),
+            "darksky_cache".to_string(),
+        ))
+    };
     let mut mgr = TempDataManager::new(client);
 
     info!("Reading electric data from {}", electric_file);
