@@ -17,6 +17,7 @@ extern crate time;
 mod darksky;
 mod grapher;
 mod measurement;
+mod nws;
 mod regression;
 #[macro_use]
 mod timed;

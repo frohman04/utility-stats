@@ -63,7 +63,7 @@ impl DarkSkyClient {
         }
     }
 
-    /// Get the DarkSky historical data for a date straigt from the API
+    /// Get the DarkSky historical data for a date straight from the API
     #[allow(clippy::trivially_copy_pass_by_ref)]
     fn get_from_api(&mut self, date: &Date) -> DarkSkyResponse {
         self.request_count += 1;
