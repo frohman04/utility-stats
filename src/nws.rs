@@ -203,13 +203,19 @@ impl WeatherClient for NwsClient {
             }
         };
 
-        let temps: Vec<f32> = data.features.into_iter()
-            .map(|f|
+        let temps: Vec<f32> = data
+            .features
+            .into_iter()
+            .map(|f| {
                 if f.properties.temperature.unit_code == "unit:degC" {
                     (f.properties.temperature.value * 9f32 / 5f32) + 32f32
                 } else {
-                    panic!("Unknown temperature unit code: {}", f.properties.temperature.unit_code)
-                })
+                    panic!(
+                        "Unknown temperature unit code: {}",
+                        f.properties.temperature.unit_code
+                    )
+                }
+            })
             .collect();
         if !temps.is_empty() {
             let mut min = f32::MAX;
@@ -238,7 +244,10 @@ impl WeatherClient for NwsClient {
                 None
             }
         } else {
-            warn!("No temperature data present for {}", date.format("%Y-%m-%d"));
+            warn!(
+                "No temperature data present for {}",
+                date.format("%Y-%m-%d")
+            );
             None
         }
     }

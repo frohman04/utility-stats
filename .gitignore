@@ -4,6 +4,8 @@ darksky_cache
 darksky_cache/db.sqlite
 nws_cache
 nws_cache/db.sqlite
+visual_crossing_cache
+visual_crossing_cache/db.sqlite
 *.html
 *.iml
 .vscode
