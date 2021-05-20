@@ -187,7 +187,7 @@ impl WeatherClient for NwsClient {
     fn get_history(&mut self, date: &Date) -> Option<Temp> {
         let date_delta = (*date - OffsetDateTime::now_utc().date()).whole_days();
         let station = self.stations.first().unwrap().clone();
-        let _data = match date_delta.cmp(&0) {
+        let data = match date_delta.cmp(&0) {
             Ordering::Equal => panic!("Cannot get history for today"),
             Ordering::Greater => panic!("Cannot get history for the future"),
             Ordering::Less => {
@@ -203,7 +203,44 @@ impl WeatherClient for NwsClient {
             }
         };
 
-        todo!()
+        let temps: Vec<f32> = data.features.into_iter()
+            .map(|f|
+                if f.properties.temperature.unit_code == "unit:degC" {
+                    (f.properties.temperature.value * 9f32 / 5f32) + 32f32
+                } else {
+                    panic!("Unknown temperature unit code: {}", f.properties.temperature.unit_code)
+                })
+            .collect();
+        if !temps.is_empty() {
+            let mut min = f32::MAX;
+            let mut max = f32::MIN;
+            let mut sum = 0 as f32;
+            let mut count = 0;
+
+            for temp in temps {
+                if temp < min {
+                    min = temp;
+                }
+                if temp > max {
+                    max = temp;
+                }
+                sum += temp;
+                count += 1;
+            }
+
+            if count > 0 {
+                Some(Temp {
+                    min,
+                    mean: sum / count as f32,
+                    max,
+                })
+            } else {
+                None
+            }
+        } else {
+            warn!("No temperature data present for {}", date.format("%Y-%m-%d"));
+            None
+        }
     }
 }
 
