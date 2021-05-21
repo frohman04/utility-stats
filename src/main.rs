@@ -17,7 +17,6 @@ extern crate time;
 mod darksky;
 mod grapher;
 mod measurement;
-mod nws;
 mod regression;
 #[macro_use]
 mod timed;
@@ -28,7 +27,6 @@ mod weatherclient;
 use crate::darksky::DarkSkyClient;
 use crate::grapher::graph_all;
 use crate::measurement::Measurements;
-use crate::nws::NwsClient;
 use crate::tmpmgr::TempDataManager;
 use crate::visual_crossing::VisualCrossingClient;
 use crate::weatherclient::WeatherClient;
@@ -69,13 +67,6 @@ fn main() {
                 .default_value("gas.csv"),
         )
         .arg(
-            Arg::with_name("nws")
-                .short("n")
-                .long("nws")
-                .takes_value(false)
-                .help("Use NWS for input instead of DarkSky"),
-        )
-        .arg(
             Arg::with_name("visual_crossing")
                 .long("vc")
                 .takes_value(false)
@@ -84,7 +75,6 @@ fn main() {
         .get_matches();
     let electric_file = matches.value_of("electric_file").unwrap();
     let gas_file = matches.value_of("gas_file").unwrap();
-    let use_nws = matches.is_present("nws");
     let use_visual_crossing = matches.is_present("visual_crossing");
     let smoothing_days = matches
         .value_of("smoothing_days")
@@ -92,13 +82,7 @@ fn main() {
         .parse::<u8>()
         .unwrap();
 
-    let client: Box<dyn WeatherClient> = if use_nws {
-        Box::new(NwsClient::new(
-            (42.5468, -71.2550102),
-            vec!["KBED".to_string()],
-            "nws_cache".to_string(),
-        ))
-    } else if use_visual_crossing {
+    let client: Box<dyn WeatherClient> = if use_visual_crossing {
         Box::new(VisualCrossingClient::new(
             "4 Bertha Circle,Billerica,MA,USA".to_string(),
             "XHW8QT2FGJKNG25B3RRKPYKKJ".to_string(),
