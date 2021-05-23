@@ -21,11 +21,15 @@ mod regression;
 #[macro_use]
 mod timed;
 mod tmpmgr;
+mod visual_crossing;
+mod weatherclient;
 
-use darksky::DarkSkyClient;
-use grapher::graph_all;
-use measurement::Measurements;
-use tmpmgr::TempDataManager;
+use crate::darksky::DarkSkyClient;
+use crate::grapher::graph_all;
+use crate::measurement::Measurements;
+use crate::tmpmgr::TempDataManager;
+use crate::visual_crossing::VisualCrossingClient;
+use crate::weatherclient::WeatherClient;
 
 use clap::{App, Arg};
 use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
@@ -62,19 +66,34 @@ fn main() {
                 .long("gas_file")
                 .default_value("gas.csv"),
         )
+        .arg(
+            Arg::with_name("visual_crossing")
+                .long("vc")
+                .takes_value(false)
+                .help("Use VisualCrossing for input instead of DarkSky"),
+        )
         .get_matches();
     let electric_file = matches.value_of("electric_file").unwrap();
     let gas_file = matches.value_of("gas_file").unwrap();
+    let use_visual_crossing = matches.is_present("visual_crossing");
     let smoothing_days = matches
         .value_of("smoothing_days")
         .unwrap()
         .parse::<u8>()
         .unwrap();
 
-    let client = DarkSkyClient::new(
-        "9fff3709265bf41d21854d403ed7ee98".to_string(),
-        "darksky_cache".to_string(),
-    );
+    let client: Box<dyn WeatherClient> = if use_visual_crossing {
+        Box::new(VisualCrossingClient::new(
+            "4 Bertha Circle,Billerica,MA,USA".to_string(),
+            "XHW8QT2FGJKNG25B3RRKPYKKJ".to_string(),
+            "visual_crossing_cache".to_string(),
+        ))
+    } else {
+        Box::new(DarkSkyClient::new(
+            "9fff3709265bf41d21854d403ed7ee98".to_string(),
+            "darksky_cache".to_string(),
+        ))
+    };
     let mut mgr = TempDataManager::new(client);
 
     info!("Reading electric data from {}", electric_file);
