@@ -65,11 +65,19 @@ impl VisualCrossingClient {
     fn get_from_api(&mut self, date: &Date) -> VisualCrossingResponse {
         let req = self
             .client
-            .get("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/\
-            weatherdata/history")
+            .get(
+                "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/\
+            weatherdata/history",
+            )
             .query(&[
-                ("startDateTime", format!("{}T00:00:00", date.format("%Y-%m-%d"))),
-                ("endDateTime", format!("{}T23:59:59", date.format("%Y-%m-%d"))),
+                (
+                    "startDateTime",
+                    format!("{}T00:00:00", date.format("%Y-%m-%d")),
+                ),
+                (
+                    "endDateTime",
+                    format!("{}T23:59:59", date.format("%Y-%m-%d")),
+                ),
                 ("location", self.my_location.clone()),
                 ("key", self.api_key.clone()),
                 ("aggregateHours", "24".to_string()),
@@ -82,7 +90,9 @@ impl VisualCrossingClient {
             .unwrap_or_else(|_| panic!("Unable to construct request for date {}", date));
         let url = req.url().clone();
         info!("Calling VisualCrossing: {}", url);
-        let res = self.client.execute(req)
+        let res = self
+            .client
+            .execute(req)
             .expect("Encountered error calling VisualCrossing API");
         match res.status() {
             StatusCode::OK => {
