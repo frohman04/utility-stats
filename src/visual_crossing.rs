@@ -134,7 +134,7 @@ impl VisualCrossingClient {
 
     /// Write a VisualCrossingResponse to the database
     fn write_data(&self, date: &Date, response: &VisualCrossingResponse) {
-        let encoded = VisualCrossingClient::write_blob(&response);
+        let encoded = VisualCrossingClient::write_blob(response);
         self.cache_db
             .execute(
                 &format!("INSERT INTO {}(date, response) VALUES (?1, ?2)", TABLE_NAME),

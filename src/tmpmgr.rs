@@ -70,7 +70,7 @@ impl TempDataManager {
         let temps: Vec<f32> = TempDataManager::date_range(from_date, to_date)
             .iter()
             .map(|date| {
-                let temp = self.get_temp(&date);
+                let temp = self.get_temp(date);
                 let temp = temp.as_ref().unwrap();
                 selector(temp)
             })
