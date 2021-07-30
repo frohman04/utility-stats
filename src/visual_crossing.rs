@@ -7,6 +7,7 @@ use reqwest::StatusCode;
 use rmp_serde::{Deserializer, Serializer};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use time::macros::{date, format_description};
 use time::{Date, OffsetDateTime};
 
 use std::cmp::Ordering;
@@ -72,11 +73,17 @@ impl VisualCrossingClient {
             .query(&[
                 (
                     "startDateTime",
-                    format!("{}T00:00:00", date.format("%Y-%m-%d")),
+                    format!(
+                        "{}T00:00:00",
+                        date.format(&format_description!("%Y-%m-%d")).unwrap()
+                    ),
                 ),
                 (
                     "endDateTime",
-                    format!("{}T23:59:59", date.format("%Y-%m-%d")),
+                    format!(
+                        "{}T23:59:59",
+                        date.format(&format_description!("%Y-%m-%d")).unwrap()
+                    ),
                 ),
                 ("location", self.my_location.clone()),
                 ("key", self.api_key.clone()),
@@ -221,7 +228,7 @@ impl WeatherClient for VisualCrossingClient {
             .or_else(|| {
                 warn!(
                     "No temperature data present for {}",
-                    date.format("%Y-%m-%d")
+                    date.format(&format_description!("%Y-%m-%d")).unwrap()
                 );
                 None
             })

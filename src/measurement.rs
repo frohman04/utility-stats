@@ -1,3 +1,4 @@
+use time::format_description;
 use time::Date;
 
 use std::path::Path;
@@ -39,7 +40,7 @@ impl Measurements {
         let mut records: Vec<Measurement> = Vec::new();
         for result in reader.deserialize() {
             let (date_str, value): (String, u16) = result?;
-            let date = Date::parse(date_str, "%F")?;
+            let date = Date::parse(&date_str, &format_description::parse("%F").unwrap())?;
             records.push(Measurement {
                 date,
                 amount: f32::from(value),
@@ -58,7 +59,7 @@ impl Measurements {
 #[derive(Debug)]
 pub enum ReadError {
     CsvError { err: csv::Error },
-    DateParseError { err: time::ParseError },
+    DateParseError { err: time::error::Parse },
 }
 
 impl From<csv::Error> for ReadError {
@@ -67,8 +68,8 @@ impl From<csv::Error> for ReadError {
     }
 }
 
-impl From<time::ParseError> for ReadError {
-    fn from(err: time::ParseError) -> Self {
+impl From<time::error::Parse> for ReadError {
+    fn from(err: time::error::Parse) -> Self {
         ReadError::DateParseError { err }
     }
 }
