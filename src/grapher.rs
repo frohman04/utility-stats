@@ -3,6 +3,7 @@ use crate::measurement::Measurements;
 use crate::regression::SimpleRegression;
 use crate::tmpmgr::TempDataManager;
 
+use time::macros::format_description;
 use time::{Date, Duration};
 
 use crate::weatherclient::Temp;
@@ -195,7 +196,10 @@ fn calc_temp_series(data: Vec<Measurement>, num_days: u8) -> (Vec<Date>, Vec<f32
 
 /// Convert a data series into the format for putting into JS.
 fn to_plot(dates: Vec<Date>, values: Vec<f32>) -> (String, String) {
-    let dates: Vec<String> = dates.iter().map(|x| x.format("%Y-%m-%d")).collect();
+    let dates: Vec<String> = dates
+        .iter()
+        .map(|x| x.format(&format_description!("%Y-%m-%d")).unwrap())
+        .collect();
     let values: Vec<String> = values.iter().map(|x| x.to_string()).collect();
     (
         if !dates.is_empty() {

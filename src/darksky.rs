@@ -7,6 +7,7 @@ use reqwest::StatusCode;
 use rmp_serde::{Deserializer, Serializer};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use time::macros::{date, format_description};
 use time::{Date, OffsetDateTime};
 
 use std::cmp::Ordering;
@@ -55,7 +56,7 @@ impl DarkSkyClient {
         let url = format!(
             "https://api.darksky.net/forecast/{}/42.5468,-71.2550102,{}T00:00:00",
             self.api_key,
-            date.format("%Y-%m-%d")
+            date.format(&format_description!("%Y-%m-%d")).unwrap()
         );
         info!("Calling DarkSky: {}", url);
         let res = self
@@ -357,7 +358,7 @@ impl DataPointCurrently {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> OffsetDateTime {
-        OffsetDateTime::from_unix_timestamp(self.timestamp)
+        OffsetDateTime::from_unix_timestamp(self.timestamp).unwrap()
     }
 }
 
@@ -438,7 +439,7 @@ impl DataPointMinutely {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> OffsetDateTime {
-        OffsetDateTime::from_unix_timestamp(self.timestamp)
+        OffsetDateTime::from_unix_timestamp(self.timestamp).unwrap()
     }
 }
 
@@ -528,7 +529,7 @@ impl DataPointHourly {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> OffsetDateTime {
-        OffsetDateTime::from_unix_timestamp(self.timestamp)
+        OffsetDateTime::from_unix_timestamp(self.timestamp).unwrap()
     }
 }
 
@@ -688,28 +689,28 @@ impl DataPointDaily {
     /// objects to midnight of the day, all according to the local time zone.
     #[allow(dead_code)]
     pub fn time(&self) -> OffsetDateTime {
-        OffsetDateTime::from_unix_timestamp(self.timestamp)
+        OffsetDateTime::from_unix_timestamp(self.timestamp).unwrap()
     }
 
     /// The time of when precipIntensityMax occurs during a given day. (only on daily)
     #[allow(dead_code)]
     pub fn precip_intensity_max_time(&self) -> Option<OffsetDateTime> {
         self.precip_intensity_max_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the daytime high temperature occurs. (only on daily)
     #[allow(dead_code)]
     pub fn temperature_high_time(&self) -> Option<OffsetDateTime> {
         self.temperature_high_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the overnight low temperature occurs. (only on daily)
     #[allow(dead_code)]
     pub fn temperature_low_time(&self) -> Option<OffsetDateTime> {
         self.temperature_low_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the maximum temperature during a given date occurs. (only
@@ -717,7 +718,7 @@ impl DataPointDaily {
     #[allow(dead_code)]
     pub fn temperature_max_time(&self) -> Option<OffsetDateTime> {
         self.temperature_max_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the minimum temperature during a given date occurs. (only
@@ -725,21 +726,21 @@ impl DataPointDaily {
     #[allow(dead_code)]
     pub fn temperature_min_time(&self) -> Option<OffsetDateTime> {
         self.temperature_min_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the daytime high apparent temperature occurs. (only on daily)
     #[allow(dead_code)]
     pub fn apparent_temperature_high_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_high_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the overnight low apparent temperature occurs. (only on daily)
     #[allow(dead_code)]
     pub fn apparent_temperature_low_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_low_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the maximum apparent temperature during a given date occurs.
@@ -747,7 +748,7 @@ impl DataPointDaily {
     #[allow(dead_code)]
     pub fn apparent_temperature_max_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_max_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time representing when the minimum apparent temperature during a given date occurs.
@@ -755,28 +756,28 @@ impl DataPointDaily {
     #[allow(dead_code)]
     pub fn apparent_temperature_min_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_min_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time of when the maximum uvIndex occurs during a given day. (only on daily)
     #[allow(dead_code)]
     pub fn uv_index_time(&self) -> Option<OffsetDateTime> {
         self.uv_index_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time of when the sun will rise during a given day. (only on daily)
     #[allow(dead_code)]
     pub fn sunrise_time(&self) -> Option<OffsetDateTime> {
         self.sunrise_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 
     /// The time of when the sun will set during a given day. (only on daily)
     #[allow(dead_code)]
     pub fn sunset_time(&self) -> Option<OffsetDateTime> {
         self.sunset_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64))
+            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
     }
 }
 
@@ -809,13 +810,13 @@ impl Alert {
     /// The time at which the alert was issued.
     #[allow(dead_code)]
     pub fn time(&self) -> OffsetDateTime {
-        OffsetDateTime::from_unix_timestamp(self.timestamp as i64)
+        OffsetDateTime::from_unix_timestamp(self.timestamp as i64).unwrap()
     }
 
     /// The time at which the alert will expire.
     #[allow(dead_code)]
     pub fn expires(&self) -> OffsetDateTime {
-        OffsetDateTime::from_unix_timestamp(self.expires_timestamp as i64)
+        OffsetDateTime::from_unix_timestamp(self.expires_timestamp as i64).unwrap()
     }
 }
 

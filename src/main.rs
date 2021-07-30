@@ -11,7 +11,6 @@ extern crate rmp_serde;
 extern crate rusqlite;
 extern crate serde;
 extern crate simplelog;
-#[macro_use]
 extern crate time;
 
 mod darksky;
