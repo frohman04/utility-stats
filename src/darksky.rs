@@ -56,7 +56,7 @@ impl DarkSkyClient {
         let url = format!(
             "https://api.darksky.net/forecast/{}/42.5468,-71.2550102,{}T00:00:00",
             self.api_key,
-            date.format(&format_description!("%Y-%m-%d")).unwrap()
+            date.format(&format_description!("[year]-[month]-[day]")).unwrap()
         );
         info!("Calling DarkSky: {}", url);
         let res = self
