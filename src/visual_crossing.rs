@@ -75,14 +75,16 @@ impl VisualCrossingClient {
                     "startDateTime",
                     format!(
                         "{}T00:00:00",
-                        date.format(&format_description!("[year]-[month]-[day]")).unwrap()
+                        date.format(&format_description!("[year]-[month]-[day]"))
+                            .unwrap()
                     ),
                 ),
                 (
                     "endDateTime",
                     format!(
                         "{}T23:59:59",
-                        date.format(&format_description!("[year]-[month]-[day]")).unwrap()
+                        date.format(&format_description!("[year]-[month]-[day]"))
+                            .unwrap()
                     ),
                 ),
                 ("location", self.my_location.clone()),
@@ -228,7 +230,8 @@ impl WeatherClient for VisualCrossingClient {
             .or_else(|| {
                 warn!(
                     "No temperature data present for {}",
-                    date.format(&format_description!("[year]-[month]-[day]")).unwrap()
+                    date.format(&format_description!("[year]-[month]-[day]"))
+                        .unwrap()
                 );
                 None
             })

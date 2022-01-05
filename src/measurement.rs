@@ -40,7 +40,10 @@ impl Measurements {
         let mut records: Vec<Measurement> = Vec::new();
         for result in reader.deserialize() {
             let (date_str, value): (String, u16) = result?;
-            let date = Date::parse(&date_str, &format_description::parse("[year]-[month]-[day]").unwrap())?;
+            let date = Date::parse(
+                &date_str,
+                &format_description::parse("[year]-[month]-[day]").unwrap(),
+            )?;
             records.push(Measurement {
                 date,
                 amount: f32::from(value),

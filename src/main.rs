@@ -48,25 +48,25 @@ fn main() {
         .version("0.1")
         .author("Chris Lieb")
         .arg(
-            Arg::with_name("smoothing_days")
-                .short("s")
+            Arg::new("smoothing_days")
+                .short('s')
                 .long("smoothing_days")
                 .default_value("14"),
         )
         .arg(
-            Arg::with_name("electric_file")
-                .short("e")
+            Arg::new("electric_file")
+                .short('e')
                 .long("electric_file")
                 .default_value("electric.csv"),
         )
         .arg(
-            Arg::with_name("gas_file")
-                .short("g")
+            Arg::new("gas_file")
+                .short('g')
                 .long("gas_file")
                 .default_value("gas.csv"),
         )
         .arg(
-            Arg::with_name("visual_crossing")
+            Arg::new("visual_crossing")
                 .long("vc")
                 .takes_value(false)
                 .help("Use VisualCrossing for input instead of DarkSky"),
