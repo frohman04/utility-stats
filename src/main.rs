@@ -30,7 +30,7 @@ use crate::tmpmgr::TempDataManager;
 use crate::visual_crossing::VisualCrossingClient;
 use crate::weatherclient::WeatherClient;
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 
 use std::path::Path;
@@ -44,7 +44,7 @@ fn main() {
     )])
     .unwrap();
 
-    let matches = App::new("utility-stats")
+    let matches = Command::new("utility-stats")
         .version("0.1")
         .author("Chris Lieb")
         .arg(
