@@ -2,6 +2,7 @@
 
 extern crate clap;
 extern crate csv;
+extern crate env_logger;
 extern crate flate2;
 #[macro_use]
 extern crate log;
@@ -10,7 +11,6 @@ extern crate rmp_serde;
 #[macro_use]
 extern crate rusqlite;
 extern crate serde;
-extern crate simplelog;
 extern crate time;
 
 mod darksky;
@@ -31,18 +31,14 @@ use crate::visual_crossing::VisualCrossingClient;
 use crate::weatherclient::WeatherClient;
 
 use clap::{Arg, Command};
-use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
+use env_logger::Env;
 
 use std::path::Path;
 
 fn main() {
-    CombinedLogger::init(vec![TermLogger::new(
-        LevelFilter::Info,
-        Config::default(),
-        TerminalMode::Stderr,
-        ColorChoice::Auto,
-    )])
-    .unwrap();
+    let env = Env::default()
+        .filter_or("MY_LOG_LEVEL", "info");
+    env_logger::init_from_env(env);
 
     let matches = Command::new("utility-stats")
         .version("0.1")
