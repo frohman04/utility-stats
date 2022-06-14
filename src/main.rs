@@ -36,8 +36,7 @@ use env_logger::Env;
 use std::path::Path;
 
 fn main() {
-    let env = Env::default()
-        .filter_or("MY_LOG_LEVEL", "info");
+    let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
     let matches = Command::new("utility-stats")
@@ -47,7 +46,8 @@ fn main() {
             Arg::new("smoothing_days")
                 .short('s')
                 .long("smoothing_days")
-                .default_value("14"),
+                .default_value("14")
+                .value_parser(clap::value_parser!(u8)),
         )
         .arg(
             Arg::new("electric_file")
@@ -68,14 +68,10 @@ fn main() {
                 .help("Use VisualCrossing for input instead of DarkSky"),
         )
         .get_matches();
-    let electric_file = matches.value_of("electric_file").unwrap();
-    let gas_file = matches.value_of("gas_file").unwrap();
-    let use_visual_crossing = matches.is_present("visual_crossing");
-    let smoothing_days = matches
-        .value_of("smoothing_days")
-        .unwrap()
-        .parse::<u8>()
-        .unwrap();
+    let electric_file = matches.get_one::<String>("electric_file").unwrap().as_str();
+    let gas_file = matches.get_one::<String>("gas_file").unwrap().as_str();
+    let use_visual_crossing = matches.contains_id("visual_crossing");
+    let smoothing_days = *matches.get_one::<u8>("smoothing_days").unwrap();
 
     let client: Box<dyn WeatherClient> = if use_visual_crossing {
         Box::new(VisualCrossingClient::new(
