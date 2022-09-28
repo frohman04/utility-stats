@@ -64,7 +64,7 @@ fn main() {
         .arg(
             Arg::new("visual_crossing")
                 .long("vc")
-                .takes_value(false)
+                .num_args(1)
                 .help("Use VisualCrossing for input instead of DarkSky"),
         )
         .get_matches();
