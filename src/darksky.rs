@@ -734,7 +734,7 @@ impl DataPointDaily {
     #[allow(dead_code)]
     pub fn apparent_temperature_high_time(&self) -> Option<OffsetDateTime> {
         self.apparent_temperature_high_timestamp
-            .map(|x| OffsetDateTime::from_unix_timestamp(x as i64).unwrap())
+            .map(|x| OffsetDateTime::from_unix_timestamp(x).unwrap())
     }
 
     /// The time representing when the overnight low apparent temperature occurs. (only on daily)
