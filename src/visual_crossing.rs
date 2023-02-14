@@ -31,7 +31,7 @@ impl VisualCrossingClient {
         db_path.set_extension("sqlite");
         let db_path = db_path.as_path();
         let cache_db = Connection::open(db_path)
-            .unwrap_or_else(|err| panic!("Unable to open database {:?}: {}", db_path, err));
+            .unwrap_or_else(|err| panic!("Unable to open database {db_path:?}: {err}"));
         VisualCrossingClient::init_db(&cache_db);
 
         VisualCrossingClient {
@@ -50,15 +50,14 @@ impl VisualCrossingClient {
         cache_db
             .execute(
                 &format!(
-                    "CREATE TABLE IF NOT EXISTS {} (
+                    "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
                         date INTEGER NOT NULL PRIMARY KEY,
                         response BLOB NOT NULL
-                    )",
-                    TABLE_NAME
+                    )"
                 ),
                 [],
             )
-            .unwrap_or_else(|err| panic!("Unable to create table: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to create table: {err}"));
     }
 
     /// Get the VisualCrossing historical data for a date straight from the API
@@ -96,9 +95,9 @@ impl VisualCrossingClient {
                 ("contentType", "json".to_string()),
             ])
             .build()
-            .unwrap_or_else(|_| panic!("Unable to construct request for date {}", date));
+            .unwrap_or_else(|_| panic!("Unable to construct request for date {date}"));
         let url = req.url().clone();
-        info!("Calling VisualCrossing: {}", url);
+        info!("Calling VisualCrossing: {url}");
         let res = self
             .client
             .execute(req)
@@ -109,7 +108,7 @@ impl VisualCrossingClient {
                     res.json().expect("Unable to deserialize response");
                 obj
             }
-            s => panic!("VisualCrossing API returned status {} for URL {}", s, url),
+            s => panic!("VisualCrossing API returned status {s} for URL {url}"),
         }
     }
 
@@ -123,20 +122,19 @@ impl VisualCrossingClient {
     fn read_data(&self, date: &Date) -> Option<VisualCrossingResponse> {
         self.cache_db
             .prepare(&format!(
-                "SELECT response FROM {} WHERE date = ?1",
-                TABLE_NAME
+                "SELECT response FROM {TABLE_NAME} WHERE date = ?1"
             ))
-            .unwrap_or_else(|err| panic!("Unable to determine if date {} for in DB: {}", date, err))
+            .unwrap_or_else(|err| panic!("Unable to determine if date {date} for in DB: {err}"))
             .query_map(params![VisualCrossingClient::get_key(date)], |row| {
                 Ok(row.get(0).unwrap_or_else(|err| {
-                    panic!("Unable to read data from DB row for date {}: {}", date, err)
+                    panic!("Unable to read data from DB row for date {date}: {err}")
                 }))
             })
-            .unwrap_or_else(|err| panic!("Unable to determine if date {} for in DB: {}", date, err))
+            .unwrap_or_else(|err| panic!("Unable to determine if date {date} for in DB: {err}"))
             .next()
             .map(|x| {
                 let response: Vec<u8> = x
-                    .unwrap_or_else(|err| panic!("Unable to read data for date {}: {}", date, err));
+                    .unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
                 VisualCrossingClient::read_blob(response)
             })
     }
@@ -146,13 +144,12 @@ impl VisualCrossingClient {
         let encoded = VisualCrossingClient::write_blob(response);
         self.cache_db
             .execute(
-                &format!("INSERT INTO {}(date, response) VALUES (?1, ?2)", TABLE_NAME),
+                &format!("INSERT INTO {TABLE_NAME}(date, response) VALUES (?1, ?2)"),
                 params![VisualCrossingClient::get_key(date), encoded],
             )
             .unwrap_or_else(|err| {
                 panic!(
-                    "Unable to write NWS data into cache for date {}: {}",
-                    date, err
+                    "Unable to write NWS data into cache for date {date}: {err}"
                 )
             });
     }
@@ -164,15 +161,15 @@ impl VisualCrossingClient {
         let mut decoder = GzDecoder::new(decompressed);
         decoder
             .write_all(&raw[..])
-            .unwrap_or_else(|err| panic!("Unable to decompress data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to decompress data: {err}"));
         decompressed = decoder
             .finish()
-            .unwrap_or_else(|err| panic!("Unable to decompress data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to decompress data: {err}"));
 
         // deserialize to object
         let mut de = Deserializer::new(&decompressed[..]);
         let response: VisualCrossingResponse = Deserialize::deserialize(&mut de)
-            .unwrap_or_else(|err| panic!("Unable to deserialize data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to deserialize data: {err}"));
 
         response
     }
@@ -183,16 +180,16 @@ impl VisualCrossingClient {
         let mut obj_buf = Vec::new();
         response
             .serialize(&mut Serializer::new(&mut obj_buf))
-            .unwrap_or_else(|err| panic!("Unable to serialize data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to serialize data: {err}"));
 
         // compress buffer
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder
             .write_all(&obj_buf)
-            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to compress data: {err}"));
         encoder
             .finish()
-            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err))
+            .unwrap_or_else(|err| panic!("Unable to compress data: {err}"))
     }
 }
 
@@ -219,7 +216,7 @@ impl WeatherClient for VisualCrossingClient {
             .get(&self.my_location)
             .map(|location| {
                 if location.values.len() > 1 {
-                    panic!("Found more than one datapoint for day {}", date);
+                    panic!("Found more than one datapoint for day {date}");
                 }
                 Temp {
                     min: location.values[0].mint,

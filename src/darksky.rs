@@ -31,7 +31,7 @@ impl DarkSkyClient {
         db_path.set_extension("sqlite");
         let db_path = db_path.as_path();
         let cache_db = Connection::open(db_path)
-            .unwrap_or_else(|err| panic!("Unable to open database {:?}: {}", db_path, err));
+            .unwrap_or_else(|err| panic!("Unable to open database {db_path:?}: {err}"));
         DarkSkyClient::init_db(&cache_db);
 
         DarkSkyClient {
@@ -70,7 +70,7 @@ impl DarkSkyClient {
                 let obj: DarkSkyResponse = res.json().expect("Unable to deserialize response");
                 obj
             }
-            s => panic!("DarkSky API returned status {} for URL {}", s, url),
+            s => panic!("DarkSky API returned status {s} for URL {url}"),
         }
     }
 
@@ -79,15 +79,14 @@ impl DarkSkyClient {
         cache_db
             .execute(
                 &format!(
-                    "CREATE TABLE IF NOT EXISTS {} (
+                    "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
                         date INTEGER NOT NULL PRIMARY KEY,
                         response BLOB NOT NULL
-                    )",
-                    TABLE_NAME
+                    )"
                 ),
                 [],
             )
-            .unwrap_or_else(|err| panic!("Unable to create table: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to create table: {err}"));
     }
 
     /// Get the DB key for a given date
@@ -100,20 +99,19 @@ impl DarkSkyClient {
     fn read_data(&self, date: &Date) -> Option<DarkSkyResponse> {
         self.cache_db
             .prepare(&format!(
-                "SELECT response FROM {} WHERE date = ?1",
-                TABLE_NAME
+                "SELECT response FROM {TABLE_NAME} WHERE date = ?1"
             ))
-            .unwrap_or_else(|err| panic!("Unable to determine if date {} in DB: {}", date, err))
+            .unwrap_or_else(|err| panic!("Unable to determine if date {date} in DB: {err}"))
             .query_map(params![DarkSkyClient::get_key(date)], |row| {
                 Ok(row.get(0).unwrap_or_else(|err| {
-                    panic!("Unable to read data from DB row for date {}: {}", date, err)
+                    panic!("Unable to read data from DB row for date {date}: {err}")
                 }))
             })
-            .unwrap_or_else(|err| panic!("Unable to determine if date {} in DB: {}", date, err))
+            .unwrap_or_else(|err| panic!("Unable to determine if date {date} in DB: {err}"))
             .next()
             .map(|x| {
                 let response: Vec<u8> = x
-                    .unwrap_or_else(|err| panic!("Unable to read data for date {}: {}", date, err));
+                    .unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
                 DarkSkyClient::read_blob(response)
             })
     }
@@ -123,13 +121,12 @@ impl DarkSkyClient {
         let encoded = DarkSkyClient::write_blob(response);
         self.cache_db
             .execute(
-                &format!("INSERT INTO {}(date, response) VALUES (?1, ?2)", TABLE_NAME),
+                &format!("INSERT INTO {TABLE_NAME}(date, response) VALUES (?1, ?2)",),
                 params![DarkSkyClient::get_key(date), encoded],
             )
             .unwrap_or_else(|err| {
                 panic!(
-                    "Unable to write DarkSky data into cache for date {}: {}",
-                    date, err
+                    "Unable to write DarkSky data into cache for date {date}: {err}"
                 )
             });
     }
@@ -141,15 +138,15 @@ impl DarkSkyClient {
         let mut decoder = GzDecoder::new(decompressed);
         decoder
             .write_all(&raw[..])
-            .unwrap_or_else(|err| panic!("Unable to decompress data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to decompress data: {err}"));
         decompressed = decoder
             .finish()
-            .unwrap_or_else(|err| panic!("Unable to decompress data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to decompress data: {err}"));
 
         // deserialize to object
         let mut de = Deserializer::new(&decompressed[..]);
         let response: DarkSkyResponse = Deserialize::deserialize(&mut de)
-            .unwrap_or_else(|err| panic!("Unable to deserialize data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to deserialize data: {err}"));
 
         response
     }
@@ -160,16 +157,16 @@ impl DarkSkyClient {
         let mut obj_buf = Vec::new();
         response
             .serialize(&mut Serializer::new(&mut obj_buf))
-            .unwrap_or_else(|err| panic!("Unable to serialize data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to serialize data: {err}"));
 
         // compress buffer
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder
             .write_all(&obj_buf)
-            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err));
+            .unwrap_or_else(|err| panic!("Unable to compress data: {err}"));
         encoder
             .finish()
-            .unwrap_or_else(|err| panic!("Unable to compress data: {}", err))
+            .unwrap_or_else(|err| panic!("Unable to compress data: {err}"))
     }
 }
 
@@ -229,7 +226,7 @@ impl WeatherClient for DarkSkyClient {
                     None
                 }
             } else {
-                warn!("No temperature data present for {:?}", date);
+                warn!("No temperature data present for {date:?}");
                 None
             }
         } else {

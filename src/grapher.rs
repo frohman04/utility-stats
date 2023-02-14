@@ -60,7 +60,7 @@ pub fn graph_all(
         "<!DOCTYPE html>
 <html>
     <head>
-        <title>All Utilities Usage per Day vs Average {}-day Smoothed Temperature</title>
+        <title>All Utilities Usage per Day vs Average {loess_days}-day Smoothed Temperature</title>
         <script src=\"https://cdn.plot.ly/plotly-1.54.1.min.js\"></script>
     </head>
     <body>
@@ -69,32 +69,32 @@ pub fn graph_all(
             (function () {{
                 var data0 = {{
                     \"name\": \"Max Temp (F)\",
-                    \"x\": [{}],
-                    \"y\": [{}],
+                    \"x\": [{loess_max_temp_dates}],
+                    \"y\": [{loess_max_temp_values}],
                     \"mode\": \"lines\",
                     \"type\": \"scatter\",
                     \"yaxis\": \"y\"
                 }};
                 var data1 = {{
                     \"name\": \"Min Temp (F)\",
-                    \"x\": [{}],
-                    \"y\": [{}],
+                    \"x\": [{loess_min_temp_dates}],
+                    \"y\": [{loess_min_temp_values}],
                     \"mode\": \"lines\",
                     \"type\": \"scatter\",
                     \"yaxis\": \"y\"
                 }};
                 var data2 = {{
                     \"name\": \"Electric (kWh/day)\",
-                    \"x\": [{}],
-                    \"y\": [{}],
+                    \"x\": [{electric_dates}],
+                    \"y\": [{electric_values}],
                     \"mode\": \"lines\",
                     \"type\": \"scatter\",
                     \"yaxis\": \"y2\"
                 }};
                 var data3 = {{
                     \"name\": \"Gas (CCF/day)\",
-                    \"x\": [{}],
-                    \"y\": [{}],
+                    \"x\": [{gas_dates}],
+                    \"y\": [{gas_values}],
                     \"mode\": \"lines\",
                     \"type\": \"scatter\",
                     \"yaxis\": \"y3\"
@@ -103,7 +103,7 @@ pub fn graph_all(
                 var data = [data0, data1, data2, data3];
                 var layout = {{
                     \"title\": {{
-                        \"title\": \"All Utilities Usage per Day vs Average {}-day Smoothed Temperature\"
+                        \"title\": \"All Utilities Usage per Day vs Average {loess_days}-day Smoothed Temperature\"
                     }},
                     \"xaxis\": {{
                         \"title\": \"Measurement Date\"
@@ -126,17 +126,7 @@ pub fn graph_all(
             }})();
         </script>
     </body>
-</html>",
-        loess_days,
-        loess_max_temp_dates,
-        loess_max_temp_values,
-        loess_min_temp_dates,
-        loess_min_temp_values,
-        electric_dates,
-        electric_values,
-        gas_dates,
-        gas_values,
-        loess_days
+</html>"
     );
 
     write("all-utilities.html", html).expect("Unable to write file");
