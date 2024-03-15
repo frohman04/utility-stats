@@ -110,8 +110,8 @@ impl DarkSkyClient {
             .unwrap_or_else(|err| panic!("Unable to determine if date {date} in DB: {err}"))
             .next()
             .map(|x| {
-                let response: Vec<u8> = x
-                    .unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
+                let response: Vec<u8> =
+                    x.unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
                 DarkSkyClient::read_blob(response)
             })
     }
@@ -125,9 +125,7 @@ impl DarkSkyClient {
                 params![DarkSkyClient::get_key(date), encoded],
             )
             .unwrap_or_else(|err| {
-                panic!(
-                    "Unable to write DarkSky data into cache for date {date}: {err}"
-                )
+                panic!("Unable to write DarkSky data into cache for date {date}: {err}")
             });
     }
 

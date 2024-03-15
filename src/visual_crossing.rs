@@ -133,8 +133,8 @@ impl VisualCrossingClient {
             .unwrap_or_else(|err| panic!("Unable to determine if date {date} for in DB: {err}"))
             .next()
             .map(|x| {
-                let response: Vec<u8> = x
-                    .unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
+                let response: Vec<u8> =
+                    x.unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
                 VisualCrossingClient::read_blob(response)
             })
     }
@@ -148,9 +148,7 @@ impl VisualCrossingClient {
                 params![VisualCrossingClient::get_key(date), encoded],
             )
             .unwrap_or_else(|err| {
-                panic!(
-                    "Unable to write NWS data into cache for date {date}: {err}"
-                )
+                panic!("Unable to write NWS data into cache for date {date}: {err}")
             });
     }
 
