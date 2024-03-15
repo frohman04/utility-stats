@@ -13,7 +13,6 @@ extern crate rusqlite;
 extern crate serde;
 extern crate time;
 
-mod darksky;
 mod grapher;
 mod measurement;
 mod regression;
@@ -23,7 +22,6 @@ mod tmpmgr;
 mod visual_crossing;
 mod weatherclient;
 
-use crate::darksky::DarkSkyClient;
 use crate::grapher::graph_all;
 use crate::measurement::Measurements;
 use crate::tmpmgr::TempDataManager;
@@ -61,30 +59,16 @@ fn main() {
                 .long("gas_file")
                 .default_value("gas.csv"),
         )
-        .arg(
-            Arg::new("visual_crossing")
-                .long("vc")
-                .num_args(0)
-                .help("Use VisualCrossing for input instead of DarkSky"),
-        )
         .get_matches();
     let electric_file = matches.get_one::<String>("electric_file").unwrap().as_str();
     let gas_file = matches.get_one::<String>("gas_file").unwrap().as_str();
-    let use_visual_crossing = matches.contains_id("visual_crossing");
     let smoothing_days = *matches.get_one::<u8>("smoothing_days").unwrap();
 
-    let client: Box<dyn WeatherClient> = if use_visual_crossing {
-        Box::new(VisualCrossingClient::new(
-            "4 Bertha Circle,Billerica,MA,USA".to_string(),
-            "XHW8QT2FGJKNG25B3RRKPYKKJ".to_string(),
-            "visual_crossing_cache".to_string(),
-        ))
-    } else {
-        Box::new(DarkSkyClient::new(
-            "9fff3709265bf41d21854d403ed7ee98".to_string(),
-            "darksky_cache".to_string(),
-        ))
-    };
+    let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
+        "4 Bertha Circle,Billerica,MA,USA".to_string(),
+        "XHW8QT2FGJKNG25B3RRKPYKKJ".to_string(),
+        "visual_crossing_cache".to_string(),
+    ));
     let mut mgr = TempDataManager::new(client);
 
     info!("Reading electric data from {}", electric_file);

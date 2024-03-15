@@ -92,3 +92,7 @@ jobs:
         with:
           command: test
           args: --verbose
+      - name: Run program
+        run: |
+          cargo run -- -e test_electric.csv -g test_gas.csv
+          test -f all-utilities.html
