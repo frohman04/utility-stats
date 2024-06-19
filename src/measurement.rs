@@ -5,6 +5,7 @@ use std::path::Path;
 
 /// A series of meter readings
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Measurements {
     /// The meter readings
     pub data: Vec<Measurement>,
@@ -60,6 +61,7 @@ impl Measurements {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum ReadError {
     CsvError { err: csv::Error },
     DateParseError { err: time::error::Parse },
