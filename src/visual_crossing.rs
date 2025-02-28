@@ -1,9 +1,9 @@
 use crate::weatherclient::{Temp, WeatherClient};
 
-use flate2::write::{GzDecoder, GzEncoder};
 use flate2::Compression;
-use reqwest::blocking::{Client, ClientBuilder};
+use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::StatusCode;
+use reqwest::blocking::{Client, ClientBuilder};
 use rmp_serde::{Deserializer, Serializer};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
