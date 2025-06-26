@@ -71,7 +71,7 @@ fn main() {
     ));
     let mut mgr = TempDataManager::new(client);
 
-    info!("Reading electric data from {}", electric_file);
+    info!("Reading electric data from {electric_file}");
     let electric = timed!(
         "Reading electric data from {}",
         electric_file,
