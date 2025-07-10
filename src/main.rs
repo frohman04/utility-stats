@@ -65,7 +65,7 @@ fn main() {
     let smoothing_days = *matches.get_one::<u8>("smoothing_days").unwrap();
 
     let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
-        "4 Bertha Circle,Billerica,MA,USA".to_string(),
+        "43 Martha Street,Indian Orchard,MA,USA".to_string(),
         "XHW8QT2FGJKNG25B3RRKPYKKJ".to_string(),
         "visual_crossing_cache".to_string(),
     ));
