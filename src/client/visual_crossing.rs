@@ -1,38 +1,33 @@
 use crate::client::{Temp, WeatherClient};
 
-use flate2::Compression;
-use flate2::write::{GzDecoder, GzEncoder};
 use reqwest::StatusCode;
 use reqwest::blocking::{Client, ClientBuilder};
-use rmp_serde::{Deserializer, Serializer};
-use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use time::macros::{date, format_description};
+use time::macros::format_description;
 use time::{Date, OffsetDateTime};
 
-use crate::client::cache::ClientCache;
+use crate::client::cache::{ClientCache, ClientCacheConnection};
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::io::Write;
 
 pub struct VisualCrossingClient {
     my_location: String,
     api_key: String,
-    client: Client,
-    cache_db: Connection,
+    http_client: Client,
+    cache_db: ClientCacheConnection,
 }
 
 const TABLE_NAME: &str = "visual_crossing";
 
 impl VisualCrossingClient {
     pub fn new(my_location: String, api_key: String, cache: &ClientCache) -> VisualCrossingClient {
-        let cache_db = cache.get_connection();
-        VisualCrossingClient::init_db(&cache_db);
+        let cache_db = cache.get_connection(TABLE_NAME);
+        cache_db.init_db();
 
         VisualCrossingClient {
             my_location,
             api_key,
-            client: ClientBuilder::new()
+            http_client: ClientBuilder::new()
                 .gzip(true)
                 .build()
                 .expect("Unable to construct HTTP client"),
@@ -40,26 +35,11 @@ impl VisualCrossingClient {
         }
     }
 
-    /// Initialize the DB used to cache NwsResponse objects
-    fn init_db(cache_db: &Connection) {
-        cache_db
-            .execute(
-                &format!(
-                    "CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
-                        date INTEGER NOT NULL PRIMARY KEY,
-                        response BLOB NOT NULL
-                    )"
-                ),
-                [],
-            )
-            .unwrap_or_else(|err| panic!("Unable to create table: {err}"));
-    }
-
     /// Get the VisualCrossing historical data for a date straight from the API
     #[allow(clippy::trivially_copy_pass_by_ref)]
     fn get_from_api(&mut self, date: &Date) -> VisualCrossingResponse {
         let req = self
-            .client
+            .http_client
             .get(
                 "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/\
             weatherdata/history",
@@ -94,7 +74,7 @@ impl VisualCrossingClient {
         let url = req.url().clone();
         info!("Calling VisualCrossing: {url}");
         let res = self
-            .client
+            .http_client
             .execute(req)
             .expect("Encountered error calling VisualCrossing API");
         match res.status() {
@@ -106,84 +86,6 @@ impl VisualCrossingClient {
             s => panic!("VisualCrossing API returned status {s} for URL {url}"),
         }
     }
-
-    /// Get the DB key for a given date
-    fn get_key(date: &Date) -> i64 {
-        let epoch = date!(1970 - 01 - 01);
-        (*date - epoch).whole_days()
-    }
-
-    /// Read a NwsResponse from the database
-    fn read_data(&self, date: &Date) -> Option<VisualCrossingResponse> {
-        self.cache_db
-            .prepare(&format!(
-                "SELECT response FROM {TABLE_NAME} WHERE date = ?1"
-            ))
-            .unwrap_or_else(|err| panic!("Unable to determine if date {date} for in DB: {err}"))
-            .query_map(params![VisualCrossingClient::get_key(date)], |row| {
-                Ok(row.get(0).unwrap_or_else(|err| {
-                    panic!("Unable to read data from DB row for date {date}: {err}")
-                }))
-            })
-            .unwrap_or_else(|err| panic!("Unable to determine if date {date} for in DB: {err}"))
-            .next()
-            .map(|x| {
-                let response: Vec<u8> =
-                    x.unwrap_or_else(|err| panic!("Unable to read data for date {date}: {err}"));
-                VisualCrossingClient::read_blob(response)
-            })
-    }
-
-    /// Write a VisualCrossingResponse to the database
-    fn write_data(&self, date: &Date, response: &VisualCrossingResponse) {
-        let encoded = VisualCrossingClient::write_blob(response);
-        self.cache_db
-            .execute(
-                &format!("INSERT INTO {TABLE_NAME}(date, response) VALUES (?1, ?2)"),
-                params![VisualCrossingClient::get_key(date), encoded],
-            )
-            .unwrap_or_else(|err| {
-                panic!("Unable to write NWS data into cache for date {date}: {err}")
-            });
-    }
-
-    /// Read a NwsResponse from a MessagePack binary blob
-    fn read_blob(raw: Vec<u8>) -> VisualCrossingResponse {
-        // decompress
-        let mut decompressed = Vec::new();
-        let mut decoder = GzDecoder::new(decompressed);
-        decoder
-            .write_all(&raw[..])
-            .unwrap_or_else(|err| panic!("Unable to decompress data: {err}"));
-        decompressed = decoder
-            .finish()
-            .unwrap_or_else(|err| panic!("Unable to decompress data: {err}"));
-
-        // deserialize to object
-        let mut de = Deserializer::new(&decompressed[..]);
-        let response: VisualCrossingResponse = Deserialize::deserialize(&mut de)
-            .unwrap_or_else(|err| panic!("Unable to deserialize data: {err}"));
-
-        response
-    }
-
-    /// Write a response to a MessagePack binary blob
-    fn write_blob(response: &VisualCrossingResponse) -> Vec<u8> {
-        // serialize to buffer
-        let mut obj_buf = Vec::new();
-        response
-            .serialize(&mut Serializer::new(&mut obj_buf))
-            .unwrap_or_else(|err| panic!("Unable to serialize data: {err}"));
-
-        // compress buffer
-        let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
-        encoder
-            .write_all(&obj_buf)
-            .unwrap_or_else(|err| panic!("Unable to compress data: {err}"));
-        encoder
-            .finish()
-            .unwrap_or_else(|err| panic!("Unable to compress data: {err}"))
-    }
 }
 
 impl WeatherClient for VisualCrossingClient {
@@ -193,13 +95,13 @@ impl WeatherClient for VisualCrossingClient {
             Ordering::Equal => panic!("Cannot get history for today"),
             Ordering::Greater => panic!("Cannot get history for the future"),
             Ordering::Less => {
-                let response = self.read_data(date);
+                let response = self.cache_db.read_data(date);
 
                 if let Some(resp) = response {
                     resp
                 } else {
                     let response = self.get_from_api(date);
-                    self.write_data(date, &response);
+                    self.cache_db.write_data(date, &response);
                     response
                 }
             }
