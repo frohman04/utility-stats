@@ -1,4 +1,4 @@
-use crate::weatherclient::{Temp, WeatherClient};
+use crate::client::{Temp, WeatherClient};
 
 use time::{Date, Duration};
 
@@ -6,15 +6,15 @@ use std::collections::HashMap;
 use std::f32;
 
 pub struct TempDataManager {
-    client: Box<dyn WeatherClient>,
+    clients: Vec<Box<dyn WeatherClient>>,
     cache: HashMap<Date, Option<Temp>>,
 }
 
 impl TempDataManager {
     /// Construct a manager that will use the given client to fetch data
-    pub fn new(client: Box<dyn WeatherClient>) -> TempDataManager {
+    pub fn new(clients: Vec<Box<dyn WeatherClient>>) -> TempDataManager {
         TempDataManager {
-            client,
+            clients,
             cache: HashMap::new(),
         }
     }
@@ -31,7 +31,34 @@ impl TempDataManager {
     /// Get the temperature for the provided date
     pub fn get_temp(&mut self, date: &Date) -> &Option<Temp> {
         if !self.cache.contains_key(date) {
-            let temp = self.client.get_history(date);
+            let temps: Vec<Option<Temp>> = self
+                .clients
+                .iter_mut()
+                .map(|client| client.get_history(date))
+                .collect();
+
+            let mut min: f32 = f32::MAX;
+            let mut max: f32 = f32::MIN;
+            let mut mean_sum: f32 = 0f32;
+            let mut count: u8 = 0;
+            for temp in temps {
+                temp.iter().for_each(|t| {
+                    min = min.min(t.min);
+                    max = max.max(t.max);
+                    mean_sum += t.mean;
+                    count += 1;
+                })
+            }
+            let temp = if count > 0 {
+                Some(Temp {
+                    min,
+                    max,
+                    mean: mean_sum / count as f32,
+                })
+            } else {
+                None
+            };
+
             self.cache.insert(*date, temp);
         }
         self.cache.get(date).unwrap()

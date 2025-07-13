@@ -6,7 +6,7 @@ use crate::tmpmgr::TempDataManager;
 use time::macros::format_description;
 use time::{Date, Duration};
 
-use crate::weatherclient::Temp;
+use crate::client::Temp;
 use std::fs::write;
 
 /// Graph all measurements against smoothed temperatures over the same timeframe

@@ -18,20 +18,21 @@ mod measurement;
 mod regression;
 #[macro_use]
 mod timed;
+mod client;
 mod config;
 mod tmpmgr;
-mod visual_crossing;
-mod weatherclient;
 
 use crate::grapher::graph_all;
 use crate::measurement::Measurements;
 use crate::tmpmgr::TempDataManager;
-use crate::visual_crossing::VisualCrossingClient;
-use crate::weatherclient::WeatherClient;
+use client::WeatherClient;
+use client::visual_crossing::VisualCrossingClient;
 
 use clap::{Arg, Command};
 use env_logger::Env;
 
+use crate::client::cache::ClientCache;
+use crate::client::open_meteo::OpenMeteoClient;
 use crate::config::Config;
 use std::path::Path;
 
@@ -47,12 +48,24 @@ fn main() {
     let config_file = matches.get_one::<String>("config").unwrap().as_str();
     let config = Config::from_file(config_file);
 
-    let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
-        config.address.clone(),
-        config.visual_crossing_api_key.clone(),
-        "visual_crossing_cache".to_string(),
-    ));
-    let mut mgr = TempDataManager::new(client);
+    let cache = ClientCache::new("cache".to_string());
+
+    let clients = {
+        let mut clients: Vec<Box<dyn WeatherClient>> = vec![Box::new(OpenMeteoClient::new(
+            config.lat, config.lon, &cache,
+        ))];
+
+        config.visual_crossing.iter().for_each(|visual_crossing| {
+            clients.push(Box::new(VisualCrossingClient::new(
+                config.address.clone(),
+                visual_crossing.api_key.clone(),
+                &cache,
+            )))
+        });
+
+        clients
+    };
+    let mut mgr = TempDataManager::new(clients);
 
     info!("Reading electric data from {}", config.electric_file);
     let electric = timed!(

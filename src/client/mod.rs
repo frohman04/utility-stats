@@ -1,3 +1,7 @@
+pub mod cache;
+pub mod open_meteo;
+pub mod visual_crossing;
+
 use time::Date;
 
 pub trait WeatherClient {
