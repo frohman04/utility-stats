@@ -3,11 +3,16 @@ use std::fs;
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 pub struct Config {
-    pub address: String,
-    pub visual_crossing_api_key: String,
     pub electric_file: String,
     pub gas_file: String,
     pub smoothing_days: u8,
+    pub visual_crossing: VisualCrossing,
+}
+
+#[derive(Debug, Eq, PartialEq, Deserialize)]
+pub struct VisualCrossing {
+    pub address: String,
+    pub api_key: String,
 }
 
 impl Config {

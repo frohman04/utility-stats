@@ -48,8 +48,8 @@ fn main() {
     let config = Config::from_file(config_file);
 
     let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
-        config.address.clone(),
-        config.visual_crossing_api_key.clone(),
+        config.visual_crossing.address.clone(),
+        config.visual_crossing.api_key.clone(),
         "visual_crossing_cache".to_string(),
     ));
     let mut mgr = TempDataManager::new(client);
