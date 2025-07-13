@@ -54,7 +54,7 @@ fn main() {
         config.visual_crossing.api_key.clone(),
         &cache,
     ));
-    let mut mgr = TempDataManager::new(client);
+    let mut mgr = TempDataManager::new(vec![client]);
 
     info!("Reading electric data from {}", config.electric_file);
     let electric = timed!(
