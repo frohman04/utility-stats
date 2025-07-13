@@ -10,10 +10,10 @@ use serde::{Deserialize, Serialize};
 use time::macros::{date, format_description};
 use time::{Date, OffsetDateTime};
 
+use crate::client::cache::ClientCache;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Write;
-use std::path::PathBuf;
 
 pub struct VisualCrossingClient {
     my_location: String,
@@ -22,16 +22,11 @@ pub struct VisualCrossingClient {
     cache_db: Connection,
 }
 
-const TABLE_NAME: &str = "visual_crossing_data";
+const TABLE_NAME: &str = "visual_crossing";
 
 impl VisualCrossingClient {
-    pub fn new(my_location: String, api_key: String, cache_dir: String) -> VisualCrossingClient {
-        let mut db_path = PathBuf::from(&cache_dir);
-        db_path.push("db");
-        db_path.set_extension("sqlite");
-        let db_path = db_path.as_path();
-        let cache_db = Connection::open(db_path)
-            .unwrap_or_else(|err| panic!("Unable to open database {db_path:?}: {err}"));
+    pub fn new(my_location: String, api_key: String, cache: &ClientCache) -> VisualCrossingClient {
+        let cache_db = cache.get_connection();
         VisualCrossingClient::init_db(&cache_db);
 
         VisualCrossingClient {

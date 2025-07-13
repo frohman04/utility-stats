@@ -31,6 +31,7 @@ use client::visual_crossing::VisualCrossingClient;
 use clap::{Arg, Command};
 use env_logger::Env;
 
+use crate::client::cache::ClientCache;
 use crate::config::Config;
 use std::path::Path;
 
@@ -46,10 +47,12 @@ fn main() {
     let config_file = matches.get_one::<String>("config").unwrap().as_str();
     let config = Config::from_file(config_file);
 
+    let cache = ClientCache::new("cache".to_string());
+
     let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
         config.visual_crossing.address.clone(),
         config.visual_crossing.api_key.clone(),
-        "visual_crossing_cache".to_string(),
+        &cache,
     ));
     let mut mgr = TempDataManager::new(client);
 
