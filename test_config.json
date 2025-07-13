@@ -2,12 +2,7 @@
   "electric_file": "test_electric.csv",
   "gas_file": "test_gas.csv",
   "smoothing_days": 14,
-  "visual_crossing": {
-    "address": "405 E 45th St,New York,NY,USA",
-    "api_key": "QESF9SKM2RRR5UKAN92A3CX7N"
-  },
-  "open_meteo": {
-    "lat": 40.7493321,
-    "lon": -73.970499
-  }
+  "address": "405 E 45th St,New York,NY,USA",
+  "lat": 40.7493321,
+  "lon": -73.970499
 }

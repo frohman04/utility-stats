@@ -50,17 +50,22 @@ fn main() {
 
     let cache = ClientCache::new("cache".to_string());
 
-    let visual_crossing_client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
-        config.visual_crossing.address.clone(),
-        config.visual_crossing.api_key.clone(),
-        &cache,
-    ));
-    let open_meteo_client: Box<dyn WeatherClient> = Box::new(OpenMeteoClient::new(
-        config.open_meteo.lat,
-        config.open_meteo.lon,
-        &cache,
-    ));
-    let mut mgr = TempDataManager::new(vec![visual_crossing_client, open_meteo_client]);
+    let clients = {
+        let mut clients: Vec<Box<dyn WeatherClient>> = vec![Box::new(OpenMeteoClient::new(
+            config.lat, config.lon, &cache,
+        ))];
+
+        config.visual_crossing.iter().for_each(|visual_crossing| {
+            clients.push(Box::new(VisualCrossingClient::new(
+                config.address.clone(),
+                visual_crossing.api_key.clone(),
+                &cache,
+            )))
+        });
+
+        clients
+    };
+    let mut mgr = TempDataManager::new(clients);
 
     info!("Reading electric data from {}", config.electric_file);
     let electric = timed!(

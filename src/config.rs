@@ -6,20 +6,15 @@ pub struct Config {
     pub electric_file: String,
     pub gas_file: String,
     pub smoothing_days: u8,
-    pub visual_crossing: VisualCrossing,
-    pub open_meteo: OpenMeteo,
+    pub address: String,
+    pub lat: f32,
+    pub lon: f32,
+    pub visual_crossing: Option<VisualCrossing>,
 }
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 pub struct VisualCrossing {
-    pub address: String,
     pub api_key: String,
-}
-
-#[derive(Debug, PartialEq, Deserialize)]
-pub struct OpenMeteo {
-    pub lat: f32,
-    pub lon: f32,
 }
 
 impl Config {
