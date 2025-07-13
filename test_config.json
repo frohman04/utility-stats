@@ -5,5 +5,9 @@
   "visual_crossing": {
     "address": "405 E 45th St,New York,NY,USA",
     "api_key": "QESF9SKM2RRR5UKAN92A3CX7N"
+  },
+  "open_meteo": {
+    "lat": 40.7493321,
+    "lon": -73.970499
   }
 }

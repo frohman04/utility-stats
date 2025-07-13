@@ -32,6 +32,7 @@ use clap::{Arg, Command};
 use env_logger::Env;
 
 use crate::client::cache::ClientCache;
+use crate::client::open_meteo::OpenMeteoClient;
 use crate::config::Config;
 use std::path::Path;
 
@@ -49,12 +50,17 @@ fn main() {
 
     let cache = ClientCache::new("cache".to_string());
 
-    let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
+    let visual_crossing_client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
         config.visual_crossing.address.clone(),
         config.visual_crossing.api_key.clone(),
         &cache,
     ));
-    let mut mgr = TempDataManager::new(vec![client]);
+    let open_meteo_client: Box<dyn WeatherClient> = Box::new(OpenMeteoClient::new(
+        config.open_meteo.lat,
+        config.open_meteo.lon,
+        &cache,
+    ));
+    let mut mgr = TempDataManager::new(vec![visual_crossing_client, open_meteo_client]);
 
     info!("Reading electric data from {}", config.electric_file);
     let electric = timed!(
