@@ -1,0 +1,7 @@
+{
+  "address": "4 Bertha Circle,Billerica,MA,USA",
+  "visual_crossing_api_key": "QESF9SKM2RRR5UKAN92A3CX7N",
+  "electric_file": "test_electric.csv",
+  "gas_file": "test_gas.csv",
+  "smoothing_days": 14
+}

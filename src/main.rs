@@ -18,6 +18,7 @@ mod measurement;
 mod regression;
 #[macro_use]
 mod timed;
+mod config;
 mod tmpmgr;
 mod visual_crossing;
 mod weatherclient;
@@ -31,6 +32,7 @@ use crate::weatherclient::WeatherClient;
 use clap::{Arg, Command};
 use env_logger::Env;
 
+use crate::config::Config;
 use std::path::Path;
 
 fn main() {
@@ -38,46 +40,27 @@ fn main() {
     env_logger::init_from_env(env);
 
     let matches = Command::new("utility-stats")
-        .version("0.1")
+        .version("0.2")
         .author("Chris Lieb")
-        .arg(
-            Arg::new("smoothing_days")
-                .short('s')
-                .long("smoothing_days")
-                .default_value("14")
-                .value_parser(clap::value_parser!(u8)),
-        )
-        .arg(
-            Arg::new("electric_file")
-                .short('e')
-                .long("electric_file")
-                .default_value("electric.csv"),
-        )
-        .arg(
-            Arg::new("gas_file")
-                .short('g')
-                .long("gas_file")
-                .default_value("gas.csv"),
-        )
+        .arg(Arg::new("config").default_value("config.json"))
         .get_matches();
-    let electric_file = matches.get_one::<String>("electric_file").unwrap().as_str();
-    let gas_file = matches.get_one::<String>("gas_file").unwrap().as_str();
-    let smoothing_days = *matches.get_one::<u8>("smoothing_days").unwrap();
+    let config_file = matches.get_one::<String>("config").unwrap().as_str();
+    let config = Config::from_file(config_file);
 
     let client: Box<dyn WeatherClient> = Box::new(VisualCrossingClient::new(
-        "43 Martha Street,Indian Orchard,MA,USA".to_string(),
-        "XHW8QT2FGJKNG25B3RRKPYKKJ".to_string(),
+        config.address.clone(),
+        config.visual_crossing_api_key.clone(),
         "visual_crossing_cache".to_string(),
     ));
     let mut mgr = TempDataManager::new(client);
 
-    info!("Reading electric data from {electric_file}");
+    info!("Reading electric data from {}", config.electric_file);
     let electric = timed!(
         "Reading electric data from {}",
-        electric_file,
+        config.electric_file,
         (|| {
             let measurements = Measurements::from_file(
-                Path::new(electric_file),
+                Path::new(&config.electric_file),
                 "Electricity".to_string(),
                 "kWh".to_string(),
             )
@@ -95,11 +78,14 @@ fn main() {
 
     let gas = timed!(
         "Reading gas data from {}",
-        gas_file,
+        config.gas_file,
         (|| {
-            let measurements =
-                Measurements::from_file(Path::new(gas_file), "Gas".to_string(), "CCF".to_string())
-                    .expect("Unable to read gas data");
+            let measurements = Measurements::from_file(
+                Path::new(&config.gas_file),
+                "Gas".to_string(),
+                "CCF".to_string(),
+            )
+            .expect("Unable to read gas data");
 
             info!(
                 "Read {} records covering {} days",
@@ -113,7 +99,7 @@ fn main() {
 
     timed!(
         "Drawing graph with smoothing days {}",
-        smoothing_days,
-        (|| graph_all(electric, gas, &mut mgr, smoothing_days))
+        config.smoothing_days,
+        (|| graph_all(electric, gas, &mut mgr, config.smoothing_days))
     );
 }
