@@ -1,3 +1,5 @@
+pub mod visual_crossing;
+
 use time::Date;
 
 pub trait WeatherClient {

@@ -1,4 +1,4 @@
-use crate::weatherclient::{Temp, WeatherClient};
+use crate::client::{Temp, WeatherClient};
 
 use time::{Date, Duration};
 

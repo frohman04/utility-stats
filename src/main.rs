@@ -18,16 +18,15 @@ mod measurement;
 mod regression;
 #[macro_use]
 mod timed;
+mod client;
 mod config;
 mod tmpmgr;
-mod visual_crossing;
-mod weatherclient;
 
 use crate::grapher::graph_all;
 use crate::measurement::Measurements;
 use crate::tmpmgr::TempDataManager;
-use crate::visual_crossing::VisualCrossingClient;
-use crate::weatherclient::WeatherClient;
+use client::WeatherClient;
+use client::visual_crossing::VisualCrossingClient;
 
 use clap::{Arg, Command};
 use env_logger::Env;
