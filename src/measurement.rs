@@ -50,7 +50,7 @@ impl Measurements {
                 amount: f32::from(value),
             })
         }
-        records.sort_by(|a, b| a.date.cmp(&b.date));
+        records.sort_by_key(|a| a.date);
 
         Ok(Measurements {
             data: records,
