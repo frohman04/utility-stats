@@ -3,7 +3,6 @@ use crate::client::{Temp, WeatherClient};
 use time::{Date, Duration};
 
 use std::collections::HashMap;
-use std::f32;
 
 pub struct TempDataManager {
     clients: Vec<Box<dyn WeatherClient>>,

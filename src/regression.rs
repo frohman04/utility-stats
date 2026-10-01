@@ -1,5 +1,3 @@
-use std::f64;
-
 /// A simple linear regression calculator.  Based on Java commons-math3 3.6.1 SimpleRegression.
 pub struct SimpleRegression {
     /// Sum of x values
